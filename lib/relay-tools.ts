@@ -49,7 +49,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       name: 'relay_get_permissions', title: 'Get delegation permissions',
       description: 'Read the exact fields and changes this mission allows, blocks, or requires human approval for.',
       inputSchema: emptySchema, annotations: readOnly,
-      execute: () => ({ policyId: POLICY.id, expires: POLICY.expires, allowed: POLICY.allowed, approvalRequired: POLICY.approvalRequired, forbidden: POLICY.forbidden }),
+      execute: () => ({ policyId: POLICY.id, expires: `${callbacks.getState().mission.moveDate}T23:59:00`, approvalThreshold: callbacks.getState().mission.approvalThreshold, allowed: POLICY.allowed, approvalRequired: POLICY.approvalRequired, forbidden: POLICY.forbidden }),
     },
     {
       name: 'relay_get_service_plan', title: 'Get service execution plan',
@@ -62,7 +62,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       name: 'council_get_account', title: 'Get Civic council account',
       description: 'Get the fictional signed-in council account and current address without changing it.',
       inputSchema: emptySchema, annotations: readOnly,
-      execute: () => ({ accountId: 'CT-1842-77', holder: 'David Adams', address: '42 Willow Road', marketingPreferences: 'unchanged' }),
+      execute: () => ({ accountId: callbacks.getState().providers.civic.accountId, holder: 'David Adams', address: callbacks.getState().providers.civic.registeredAddress, marketingPreferences: callbacks.getState().providers.hearth.marketingPreferences }),
     },
     {
       name: 'council_preview_move', title: 'Preview Civic address change',
@@ -71,9 +71,11 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       annotations: readOnly,
       execute: (rawInput) => {
         const input = objectInput(rawInput);
-        if (input.newAddress !== '18 River Lane' || input.moveDate !== '2026-09-15') return { status: 'invalid_input', expected: { newAddress: '18 River Lane', moveDate: '2026-09-15' } };
+        const mission = callbacks.getState().mission;
+        if (callbacks.getState().missionStatus === 'draft') return { status: 'denied', reason: 'mission_configuration_required' };
+        if (input.newAddress !== mission.newAddress || input.moveDate !== mission.moveDate) return { status: 'invalid_input', expected: { newAddress: mission.newAddress, moveDate: mission.moveDate } };
         callbacks.onBeginService('civic');
-        return { status: 'ready', provider: 'Civic', before: '42 Willow Road', after: '18 River Lane', fee: 0, policyDecision: 'allowed' };
+        return { status: 'ready', provider: 'Civic', before: mission.currentAddress, after: mission.newAddress, fee: 0, policyDecision: 'allowed' };
       },
     },
     {
@@ -84,7 +86,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
         if (serviceTone(callbacks, 'civic') === 'done') return { status: 'completed', replayed: true, receiptId: 'RCT-CIV-0915' };
         if (!requirePreview(callbacks, 'civic')) return { status: 'denied', reason: 'preview_required' };
         callbacks.onCompleteService('civic');
-        return { status: 'completed', receiptId: 'RCT-CIV-0915', address: '18 River Lane' };
+        return { status: 'completed', receiptId: 'RCT-CIV-0915', address: callbacks.getState().mission.newAddress };
       },
     },
 
@@ -95,7 +97,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       annotations: readOnly,
       execute: (rawInput) => {
         const input = objectInput(rawInput);
-        return input.postcode === 'SE1 2AB' ? { available: true, fuel: ['electricity', 'gas'], address: '18 River Lane' } : { available: false };
+        return input.postcode === callbacks.getState().mission.postcode ? { available: true, fuel: ['electricity', 'gas'], address: callbacks.getState().mission.newAddress } : { available: false };
       },
     },
     {
@@ -106,7 +108,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       execute: (rawInput) => {
         if (serviceTone(callbacks, 'civic') !== 'done') return { status: 'denied', reason: 'civic_step_required' };
         const input = objectInput(rawInput);
-        if (input.moveDate !== '2026-09-15') return { status: 'invalid_input', field: 'moveDate' };
+        if (input.moveDate !== callbacks.getState().mission.moveDate) return { status: 'invalid_input', field: 'moveDate', expected: callbacks.getState().mission.moveDate };
         callbacks.onBeginService('northstar');
         return { status: 'ready', tariff: 'Northstar Flex', estimatedChange: 0, policyDecision: 'allowed' };
       },
@@ -119,7 +121,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
         if (serviceTone(callbacks, 'northstar') === 'done') return { status: 'completed', replayed: true, receiptId: 'RCT-ENE-0915' };
         if (!requirePreview(callbacks, 'northstar')) return { status: 'denied', reason: 'preview_required' };
         callbacks.onCompleteService('northstar');
-        return { status: 'completed', receiptId: 'RCT-ENE-0915', date: '2026-09-15' };
+        return { status: 'completed', receiptId: 'RCT-ENE-0915', date: callbacks.getState().mission.moveDate };
       },
     },
 
@@ -131,9 +133,9 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       execute: (rawInput) => {
         if (serviceTone(callbacks, 'northstar') !== 'done') return { status: 'denied', reason: 'energy_step_required' };
         const input = objectInput(rawInput);
-        if (input.months !== 6) return { status: 'invalid_input', expectedMonths: 6 };
+        if (input.months !== callbacks.getState().mission.forwardingMonths) return { status: 'invalid_input', expectedMonths: callbacks.getState().mission.forwardingMonths };
         callbacks.onBeginService('postway');
-        return { status: 'ready', months: 6, fee: 42, destination: '18 River Lane', policyDecision: 'allowed' };
+        return { status: 'ready', months: callbacks.getState().mission.forwardingMonths, fee: 42, destination: callbacks.getState().mission.newAddress, policyDecision: 'allowed' };
       },
     },
     {
@@ -144,7 +146,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
         if (serviceTone(callbacks, 'postway') === 'done') return { status: 'completed', replayed: true, receiptId: 'RCT-PST-0915' };
         if (!requirePreview(callbacks, 'postway')) return { status: 'denied', reason: 'preview_required' };
         callbacks.onCompleteService('postway');
-        return { status: 'completed', receiptId: 'RCT-PST-0915', months: 6 };
+        return { status: 'completed', receiptId: 'RCT-PST-0915', months: callbacks.getState().mission.forwardingMonths };
       },
     },
 
@@ -152,7 +154,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       name: 'internet_get_account', title: 'Get Wavelength account',
       description: 'Get the fictional Wavelength account and current broadband plan.',
       inputSchema: emptySchema, annotations: readOnly,
-      execute: () => ({ accountId: 'WV-7719-04', plan: 'Standard 100', monthlyCost: 36 }),
+      execute: () => ({ accountId: callbacks.getState().providers.wavelength.accountId, plan: callbacks.getState().providers.wavelength.plan, monthlyCost: callbacks.getState().providers.wavelength.monthlyCost, address: callbacks.getState().providers.wavelength.serviceAddress }),
     },
     {
       name: 'internet_check_availability', title: 'Check Wavelength availability',
@@ -161,7 +163,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       annotations: readOnly,
       execute: (rawInput) => {
         const input = objectInput(rawInput);
-        return input.postcode === 'SE1 2AB'
+        return input.postcode === callbacks.getState().mission.postcode
           ? { available: [{ proposalId: 'PROP-WAV-300', plan: 'Fibre 300', monthlyCost: 42, contractMonths: 12 }] }
           : { available: [] };
       },
@@ -174,10 +176,13 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       execute: (rawInput) => {
         if (serviceTone(callbacks, 'postway') !== 'done') return { status: 'denied', reason: 'allowed_service_steps_incomplete' };
         const input = objectInput(rawInput);
-        if (input.moveDate !== '2026-09-15' || input.postcode !== 'SE1 2AB') return { status: 'invalid_input', expected: { moveDate: '2026-09-15', postcode: 'SE1 2AB' } };
+        const mission = callbacks.getState().mission;
+        if (input.moveDate !== mission.moveDate || input.postcode !== mission.postcode) return { status: 'invalid_input', expected: { moveDate: mission.moveDate, postcode: mission.postcode } };
         callbacks.onBeginService('wavelength');
         callbacks.onApprovalRequired();
-        return { status: 'approval_required', proposalId: 'PROP-WAV-300', current: { plan: 'Standard 100', monthlyCost: 36 }, proposed: { plan: 'Fibre 300', monthlyCost: 42 }, reason: 'Recurring cost increases by £6.', policyDecision: 'human_required' };
+        return mission.approvalThreshold >= 6
+          ? { status: 'completed_within_policy', proposalId: 'PROP-WAV-300', receiptId: 'RCT-WAV-0915', policyDecision: 'allowed_by_threshold' }
+          : { status: 'approval_required', proposalId: 'PROP-WAV-300', current: { plan: 'Standard 100', monthlyCost: 36 }, proposed: { plan: 'Fibre 300', monthlyCost: 42 }, reason: 'Recurring cost increases by £6.', policyDecision: 'human_required' };
       },
     },
     {

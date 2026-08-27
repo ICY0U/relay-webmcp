@@ -3,6 +3,8 @@ import {
   approveInternetTransfer,
   beginService,
   completeService,
+  configureMission,
+  DEFAULT_MISSION,
   getMissionSnapshot,
   grantInternetApproval,
   INITIAL_STATE,
@@ -10,6 +12,8 @@ import {
   startMission,
 } from '../lib/relay';
 import { createRelayTools, type RelayToolCallbacks } from '../lib/relay-tools';
+
+const READY_STATE = configureMission(INITIAL_STATE, DEFAULT_MISSION, new Date('2026-08-27T13:59:00.000Z'));
 
 function callbacks(overrides: Partial<RelayToolCallbacks> = {}): RelayToolCallbacks {
   return {
@@ -25,16 +29,17 @@ function callbacks(overrides: Partial<RelayToolCallbacks> = {}): RelayToolCallba
 }
 
 describe('RELAY delegation state', () => {
-  it('starts as a genuinely runnable mission with no pre-created receipts', () => {
-    const snapshot = getMissionSnapshot(INITIAL_STATE);
+  it('turns an editable draft into a runnable mission with no pre-created receipts', () => {
+    expect(getMissionSnapshot(INITIAL_STATE).status).toBe('draft');
+    const snapshot = getMissionSnapshot(READY_STATE);
     expect(snapshot.status).toBe('ready');
     expect(snapshot.completed).toBe(0);
     expect(snapshot.totalAllowed).toBe(4);
-    expect(INITIAL_STATE.receipts).toHaveLength(0);
+    expect(READY_STATE.receipts).toHaveLength(0);
   });
 
   it('executes allowed services and creates one receipt for each mutation', () => {
-    let state = startMission(INITIAL_STATE, new Date('2026-08-27T14:00:00.000Z'));
+    let state = startMission(READY_STATE, new Date('2026-08-27T14:00:00.000Z'));
     for (const id of ['civic', 'northstar', 'postway']) {
       state = beginService(state, id);
       state = completeService(state, id);
@@ -47,9 +52,28 @@ describe('RELAY delegation state', () => {
     expect(state.receipts).toHaveLength(3);
   });
 
+  it('projects custom mission values into provider accounts and receipts', () => {
+    const custom = configureMission(INITIAL_STATE, {
+      ...DEFAULT_MISSION,
+      currentAddress: '7 Horizon Way',
+      newAddress: '88 Beacon Street',
+      postcode: 'M1 4AB',
+      moveDate: '2026-09-22',
+      forwardingMonths: 12,
+    });
+    let state = completeService(beginService(startMission(custom), 'civic'), 'civic');
+    state = completeService(beginService(state, 'northstar'), 'northstar');
+    state = completeService(beginService(state, 'postway'), 'postway');
+    expect(state.providers.civic.registeredAddress).toBe('88 Beacon Street');
+    expect(state.providers.northstar.moveDate).toBe('2026-09-22');
+    expect(state.providers.postway.forwardingMonths).toBe(12);
+    expect(state.receipts[0]).toMatchObject({ before: '7 Horizon Way', after: '88 Beacon Street' });
+    expect(state.receipts[2].after).toContain('12 months');
+  });
+
   it('requires explicit approval before completing the internet transfer', () => {
     expect(approveInternetTransfer(INITIAL_STATE)).toBe(INITIAL_STATE);
-    const waiting = requestInternetApproval(startMission(INITIAL_STATE));
+    const waiting = requestInternetApproval(startMission(READY_STATE));
     const granted = grantInternetApproval(waiting, new Date('2026-08-27T14:00:00.000Z'));
     const approved = approveInternetTransfer(granted, new Date('2026-08-27T14:00:01.000Z'));
     expect(approved.approvalStatus).toBe('approved');
@@ -57,8 +81,17 @@ describe('RELAY delegation state', () => {
     expect(approved.receipts.at(-1)).toMatchObject({ service: 'Wavelength', policyId: 'POL-MOVE-0915', approvedBy: 'David · explicit approval' });
   });
 
+  it('completes a £6 increase automatically only when the configured threshold allows it', () => {
+    const configured = configureMission(INITIAL_STATE, { ...DEFAULT_MISSION, approvalThreshold: 10 });
+    let state = startMission(configured);
+    for (const id of ['civic', 'northstar', 'postway']) state = completeService(beginService(state, id), id);
+    state = requestInternetApproval(beginService(state, 'wavelength'));
+    expect(state.missionStatus).toBe('complete');
+    expect(state.receipts.at(-1)).toMatchObject({ service: 'Wavelength', approvedBy: 'delegation-policy' });
+  });
+
   it('is replay-safe and does not create a second receipt', () => {
-    const waiting = requestInternetApproval(startMission(INITIAL_STATE));
+    const waiting = requestInternetApproval(startMission(READY_STATE));
     const approved = approveInternetTransfer(grantInternetApproval(waiting), new Date('2026-08-27T14:00:00.000Z'));
     expect(approveInternetTransfer(approved)).toBe(approved);
     expect(approved.receipts).toHaveLength(1);
@@ -67,7 +100,7 @@ describe('RELAY delegation state', () => {
 
 describe('RELAY WebMCP tools', () => {
   it('lets real provider tool calls drive the visible mission to the approval boundary', async () => {
-    let state = INITIAL_STATE;
+    let state = READY_STATE;
     const tools = createRelayTools(callbacks({
       getState: () => state,
       onBeginService: (serviceId) => { state = beginService(startMission(state), serviceId); },
@@ -100,7 +133,7 @@ describe('RELAY WebMCP tools', () => {
   it('opens a visible human gate but never self-approves', async () => {
     const onApprovalRequested = vi.fn();
     const onCommit = vi.fn();
-    const waiting = requestInternetApproval(startMission(INITIAL_STATE));
+    const waiting = requestInternetApproval(startMission(READY_STATE));
     const tools = createRelayTools(callbacks({ getState: () => waiting, onApprovalRequested, onCommit }));
     const request = tools.find((tool) => tool.name === 'relay_request_human_approval');
     expect(await request?.execute('{"proposalId":"PROP-WAV-300"}')).toMatchObject({ status: 'waiting_for_human' });
@@ -109,7 +142,7 @@ describe('RELAY WebMCP tools', () => {
   });
 
   it('exposes a runnable orchestration tool for the agent', async () => {
-    let state = INITIAL_STATE;
+    let state = READY_STATE;
     const onRunMission = vi.fn(async () => { state = requestInternetApproval(startMission(state)); });
     const tools = createRelayTools(callbacks({ getState: () => state, onRunMission }));
     const execute = tools.find((tool) => tool.name === 'relay_execute_allowed_plan');
@@ -118,7 +151,7 @@ describe('RELAY WebMCP tools', () => {
   });
 
   it('permits the commit only after the human-created approval state exists', async () => {
-    const state = grantInternetApproval(requestInternetApproval(startMission(INITIAL_STATE)), new Date('2026-08-27T14:00:00.000Z'));
+    const state = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), new Date('2026-08-27T14:00:00.000Z'));
     const onCommit = vi.fn();
     const tools = createRelayTools(callbacks({ getState: () => state, onCommit }));
     const commit = tools.find((tool) => tool.name === 'internet_commit_transfer');

@@ -4,7 +4,7 @@
 
 **Live demo:** https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 
-RELAY is a WebMCP-native mission control for safely delegating a life event across multiple websites. The competition demo turns “I’m moving home” into a coordinated plan across fictional council, energy, postal, broadband, and employer services.
+RELAY is a WebMCP-native mission control for safely delegating a life event across multiple websites. The user configures their own moving-home mission, then RELAY coordinates fictional council, energy, postal, broadband, and employer services while keeping every action on one screen.
 
 The agent can inspect accounts, preview changes, and complete low-risk actions within an explicit delegation policy. When Wavelength proposes a £6 monthly increase, RELAY stops at a visible human approval gate. Every completed mutation creates an append-only action receipt.
 
@@ -39,14 +39,15 @@ npm run build
 
 ## Three-minute demo path
 
-1. Open RELAY at 0% and explain the single moving-home intent and active guardrails.
-2. Press **Start secure mission** without leaving RELAY.
+1. Configure the current address, destination, move date, forwarding period, and monthly-price approval threshold.
+2. Press **Build secure plan**, explain the generated instruction and active guardrails, then press **Start secure mission** without leaving RELAY.
 3. Show Civic, Northstar, and Postway execute in sequence; each action changes the visible mission and creates a receipt.
 4. Show RELAY pause at 75% before the Wavelength price increase while Hearth remains blocked.
 5. Open **Activity** to show the live structured trace, then **Permissions** to show the precise boundary.
 6. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
 7. Show RELAY commit the narrowly approved transfer, then show completion and all four receipts.
-8. Open the Wavelength fictional service to show its standalone WebMCP surface and declarative manual-approval form.
+8. Reload the app to prove that the mission and receipts persist, then open Civic to show its registered address changed to the configured destination.
+9. Open Wavelength to show its standalone WebMCP surface and declarative manual-approval form.
 
 ## WebMCP surface
 
@@ -81,6 +82,7 @@ The mission page registers nineteen tools, including provider-level account, pre
 app/relay-app.tsx                 one-screen mission control
 app/providers/[provider]/         fictional WebMCP service sites
 lib/relay.ts                      policy, mission state, receipt logic
+lib/relay-storage.ts              browser-local fictional service ledger
 lib/relay-tools.ts                testable WebMCP tool definitions
 lib/use-webmcp.ts                 browser registration lifecycle
 tests/relay.test.ts               permission and tool denial tests

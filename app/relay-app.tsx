@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   Activity as ActivityIcon,
   ArrowRight,
@@ -31,7 +31,8 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { approveInternetTransfer, beginService, completeService, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, startMission, type RelayService, type RelayState } from '@/lib/relay';
+import { approveInternetTransfer, beginService, completeService, configureMission, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, startMission, type MissionConfig, type RelayService, type RelayState } from '@/lib/relay';
+import { clearRelayState, loadRelayState, persistRelayState, RELAY_STORAGE_KEY } from '@/lib/relay-storage';
 import { useWebMCP } from '@/lib/use-webmcp';
 
 type Drawer = 'permissions' | 'receipts' | 'activity' | 'service' | null;
@@ -56,7 +57,28 @@ export default function RelayApp() {
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [approvalAcknowledged, setApprovalAcknowledged] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const runToken = useRef(0);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setState(loadRelayState());
+      setHydrated(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key === RELAY_STORAGE_KEY) setState(loadRelayState());
+    };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) persistRelayState(state);
+  }, [hydrated, state]);
 
   const runMission = useCallback(async () => {
     const token = ++runToken.current;
@@ -119,6 +141,7 @@ export default function RelayApp() {
   const allowed = state.services.filter((service) => service.tone !== 'blocked');
   const completed = allowed.filter((service) => service.tone === 'done').length;
   const isComplete = state.missionStatus === 'complete';
+  const isDraft = state.missionStatus === 'draft';
   const isReady = state.missionStatus === 'ready';
   const isRunning = state.missionStatus === 'running';
   const isCommitting = state.missionStatus === 'committing';
@@ -128,8 +151,9 @@ export default function RelayApp() {
     runToken.current += 1;
     setRunMode(null);
     setApprovalOpen(false);
+    clearRelayState();
     setState(INITIAL_STATE);
-    setToast('Demo reset — ready for a fresh run');
+    setToast('Demo reset — ready to create a fresh mission');
     window.setTimeout(() => setToast(null), 2400);
   };
 
@@ -164,7 +188,7 @@ export default function RelayApp() {
 
         <div className="sidebar-trust">
           <LockKeyhole size={16} />
-          <div><strong>Delegation active</strong><span>Expires 15 Sep</span></div>
+          <div><strong>Delegation active</strong><span>Expires {new Date(`${state.mission.moveDate}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span></div>
         </div>
 
         <button className="user-menu" aria-label="David Adams profile">
@@ -194,14 +218,14 @@ export default function RelayApp() {
             <section className={`mission-hero ${isComplete ? 'complete' : ''}`}>
               <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
               <div className="hero-heading-row">
-                <span className="live-status"><i /> {isComplete ? 'Completed within your rules' : isReady ? 'Ready for secure delegation' : isRunning || isCommitting ? 'Agent executing live' : 'Agent paused safely'}</span>
+                <span className="live-status"><i /> {isComplete ? 'Completed within your rules' : isDraft ? 'New secure mission' : isReady ? 'Ready for secure delegation' : isRunning || isCommitting ? 'Agent executing live' : 'Agent paused safely'}</span>
                 <span className="mission-id">MISSION-MOVE-0915</span>
               </div>
-              <h2>{isComplete ? 'Your move is coordinated.' : isReady ? 'Move home without the admin.' : isRunning || isCommitting ? 'Coordinating your move now.' : 'One decision needs you.'}</h2>
-              <p className="hero-subtitle">{isComplete ? 'Every permitted action is complete. Protected details were left untouched.' : isReady ? 'One instruction becomes a safe, auditable plan across five services.' : isRunning || isCommitting ? 'RELAY is calling structured service tools and recording every result.' : 'Three services are complete. RELAY stopped before changing your monthly cost.'}</p>
+              <h2>{isComplete ? 'Your move is coordinated.' : isDraft ? 'Plan the move. Set the boundaries.' : isReady ? 'Your secure plan is ready.' : isRunning || isCommitting ? 'Coordinating your move now.' : 'One decision needs you.'}</h2>
+              <p className="hero-subtitle">{isComplete ? 'Every permitted action is complete. Protected details were left untouched.' : isDraft ? 'Enter the real mission details once. RELAY will turn them into an auditable cross-service plan.' : isReady ? 'Your instruction is configured across five services and protected by one delegation policy.' : isRunning || isCommitting ? 'RELAY is calling structured service tools and recording every result.' : 'Three services are complete. RELAY stopped before changing your monthly cost.'}</p>
               <button className="intent-surface" onClick={() => setDrawer('permissions')}>
                 <Sparkles size={17} />
-                <span><small>Your instruction</small>“Move me on 15 September. Don’t touch employer details or marketing preferences.”</span>
+                <span><small>{isDraft ? 'Mission template' : 'Your instruction'}</small>“Move me from {state.mission.currentAddress} to {state.mission.newAddress} on {formatDate(state.mission.moveDate)}. Don’t touch employer details or marketing preferences.”</span>
                 <ChevronRight size={18} />
               </button>
               <div className="hero-progress-row">
@@ -234,7 +258,13 @@ export default function RelayApp() {
           </section>
 
           <aside className="dashboard-aside">
-            {isReady ? (
+            {isDraft ? (
+              <MissionComposer mission={state.mission} onSave={(mission) => {
+                setState((current) => configureMission(current, mission));
+                setToast('Secure execution plan created');
+                window.setTimeout(() => setToast(null), 2600);
+              }} />
+            ) : isReady ? (
               <section className="approval-card launch-card" data-testid="launch-card">
                 <div className="attention-icon launch-icon"><Bot size={22} /></div>
                 <span className="approval-eyebrow">Built-in RELAY agent</span>
@@ -268,7 +298,7 @@ export default function RelayApp() {
                 <span className="approval-eyebrow">Your decision</span>
                 <h2>Approve one plan change</h2>
                 <p>Wavelength can move your internet, but your monthly cost would increase.</p>
-                <div className="provider-lockup-v2"><span className="provider-icon provider-wavelength"><Wifi size={18} /></span><span><strong>Wavelength</strong><small>Internet transfer · 15 Sep</small></span></div>
+                <div className="provider-lockup-v2"><span className="provider-icon provider-wavelength"><Wifi size={18} /></span><span><strong>Wavelength</strong><small>Internet transfer · {formatDate(state.mission.moveDate)}</small></span></div>
                 <PriceChange />
                 <div className="boundary-message"><ShieldCheck size={18} /><span><strong>RELAY stopped here automatically</strong>Your rules require approval for any recurring price increase.</span></div>
                 <button className="primary-action" onClick={requestApproval}>Review this decision <ArrowRight size={17} /></button>
@@ -281,7 +311,7 @@ export default function RelayApp() {
                 <span className="approval-eyebrow">Mission complete</span>
                 <h2>Everything allowed is done</h2>
                 <p>Four services were updated. Employer details and marketing preferences stayed protected.</p>
-                <div className="latest-receipt"><FileCheck2 size={20} /><span><small>Latest action receipt</small><strong>{state.receipts.at(-1)?.receiptId}</strong><em>Human approved · Wavelength</em></span></div>
+                <div className="latest-receipt"><FileCheck2 size={20} /><span><small>Latest action receipt</small><strong>{state.receipts.at(-1)?.receiptId}</strong><em>{state.receipts.at(-1)?.approvedBy === 'delegation-policy' ? 'Completed within policy' : 'Human approved'} · Wavelength</em></span></div>
                 <button className="primary-action" onClick={() => setDrawer('receipts')}>Review action receipts <ArrowRight size={17} /></button>
                 <button className="quiet-action" onClick={resetMission}><RefreshCw size={14} /> Reset demo mission</button>
               </section>
@@ -291,7 +321,7 @@ export default function RelayApp() {
               <header><ShieldCheck size={18} /><span><strong>Your guardrails are active</strong><small>{POLICY.id}</small></span></header>
               <ul>
                 <li><Check size={14} /><span>Address and move date allowed</span></li>
-                <li><CircleAlert size={14} /><span>Price increases need approval</span></li>
+                <li><CircleAlert size={14} /><span>Price increases above £{state.mission.approvalThreshold}/mo need approval</span></li>
                 <li><Ban size={14} /><span>Employer and marketing blocked</span></li>
               </ul>
               <button onClick={() => setDrawer('permissions')}>See all permissions <ChevronRight size={15} /></button>
@@ -304,10 +334,10 @@ export default function RelayApp() {
         <div className="drawer-backdrop" onMouseDown={() => setDrawer(null)}>
           <aside className="drawer relay-drawer" aria-modal="true" role="dialog" onMouseDown={(event) => event.stopPropagation()}>
             <button className="drawer-close" onClick={() => setDrawer(null)} aria-label="Close panel"><X size={18} /></button>
-            {drawer === 'permissions' && <PermissionsPanel />}
+            {drawer === 'permissions' && <PermissionsPanel state={state} />}
             {drawer === 'receipts' && <ReceiptsPanel state={state} />}
             {drawer === 'activity' && <ActivityPanel activity={state.activity} webmcp={webmcp} />}
-            {drawer === 'service' && selectedService && <ServicePanel service={selectedService} />}
+            {drawer === 'service' && selectedService && <ServicePanel service={selectedService} state={state} />}
           </aside>
         </div>
       )}
@@ -322,7 +352,7 @@ export default function RelayApp() {
             <p>Review exactly what will change. This permission cannot be reused for another action.</p>
             <PriceChange expanded />
             <dl className="approval-facts">
-              <div><dt>Move date</dt><dd>15 September 2026</dd></div>
+              <div><dt>Move date</dt><dd>{formatDate(state.mission.moveDate)}</dd></div>
               <div><dt>New contract</dt><dd>12 months</dd></div>
               <div><dt>Permission scope</dt><dd>This transfer only</dd></div>
             </dl>
@@ -343,6 +373,50 @@ export default function RelayApp() {
   );
 }
 
+function MissionComposer({ mission, onSave }: { mission: MissionConfig; onSave: (mission: MissionConfig) => void }) {
+  const [draft, setDraft] = useState(mission);
+
+  function update<K extends keyof MissionConfig>(key: K, value: MissionConfig[K]) {
+    setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSave({
+      ...draft,
+      currentAddress: draft.currentAddress.trim(),
+      newAddress: draft.newAddress.trim(),
+      postcode: draft.postcode.trim().toUpperCase(),
+    });
+  }
+
+  return <section className="approval-card mission-composer" data-testid="mission-composer">
+    <div className="attention-icon launch-icon"><Sparkles size={21} /></div>
+    <span className="approval-eyebrow">Create your mission</span>
+    <h2>Where are you moving?</h2>
+    <p>These fictional details become the live inputs used by every provider action and receipt.</p>
+    <form onSubmit={submit}>
+      <label><span>Current address</span><input required value={draft.currentAddress} onChange={(event) => update('currentAddress', event.target.value)} /></label>
+      <label><span>New address</span><input required value={draft.newAddress} onChange={(event) => update('newAddress', event.target.value)} /></label>
+      <div className="composer-grid">
+        <label><span>Postcode</span><input required value={draft.postcode} onChange={(event) => update('postcode', event.target.value)} /></label>
+        <label><span>Move date</span><input required inputMode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" value={draft.moveDate} onChange={(event) => update('moveDate', event.target.value)} /></label>
+      </div>
+      <div className="composer-grid">
+        <label><span>Mail forwarding</span><select value={draft.forwardingMonths} onChange={(event) => update('forwardingMonths', Number(event.target.value) as MissionConfig['forwardingMonths'])}><option value={3}>3 months</option><option value={6}>6 months</option><option value={12}>12 months</option></select></label>
+        <label><span>Auto-approve increase</span><select value={draft.approvalThreshold} onChange={(event) => update('approvalThreshold', Number(event.target.value))}><option value={0}>Never</option><option value={5}>Up to £5/mo</option><option value={10}>Up to £10/mo</option></select></label>
+      </div>
+      <div className="composer-guardrail"><ShieldCheck size={16} /><span><strong>Protected by default</strong>Employer records and marketing preferences will remain blocked.</span></div>
+      <button className="primary-action" type="submit">Build secure plan <ArrowRight size={16} /></button>
+    </form>
+    <span className="no-action-note"><LockKeyhole size={12} /> Demo information stays in this browser</span>
+  </section>;
+}
+
+function formatDate(value: string) {
+  return new Date(`${value}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
 function PriceChange({ expanded = false }: { expanded?: boolean }) {
   return <div className={`price-comparison ${expanded ? 'expanded' : ''}`}>
     <div><small>Current plan</small><strong>Standard 100</strong><span>£36 <em>/ month</em></span></div>
@@ -355,9 +429,9 @@ function PanelHeading({ kicker, title, body }: { kicker: string; title: string; 
   return <div className="drawer-heading relay-drawer-heading"><span className="section-kicker">{kicker}</span><h2>{title}</h2><p>{body}</p></div>;
 }
 
-function PermissionsPanel() {
+function PermissionsPanel({ state }: { state: RelayState }) {
   return <><PanelHeading kicker="Delegation policy" title="You set the boundaries." body="RELAY checks this policy before every tool call and refuses anything outside it." />
-    <div className="policy-id"><span>Active policy</span><strong>{POLICY.id}</strong><small>Expires {POLICY.expires}</small></div>
+    <div className="policy-id"><span>Active policy</span><strong>{POLICY.id}</strong><small>Expires {formatDate(state.mission.moveDate)}, 23:59</small></div>
     <PolicyGroup tone="allow" title="Agent may use" items={POLICY.allowed} />
     <PolicyGroup tone="review" title="Always ask me" items={POLICY.approvalRequired} />
     <PolicyGroup tone="deny" title="Never change" items={POLICY.forbidden} />
@@ -381,9 +455,19 @@ function ActivityPanel({ activity, webmcp }: { activity: RelayState['activity'];
   </>;
 }
 
-function ServicePanel({ service }: { service: RelayService }) {
+function ServicePanel({ service, state }: { service: RelayService; state: RelayState }) {
+  const provider = state.providers[service.id as keyof RelayState['providers']];
+  const accountRows = service.id === 'civic'
+    ? [['Registered address', state.providers.civic.registeredAddress], ['Last updated', state.providers.civic.lastUpdated ? new Date(state.providers.civic.lastUpdated).toLocaleTimeString('en-GB') : 'Not changed']]
+    : service.id === 'northstar'
+      ? [['Service address', state.providers.northstar.serviceAddress], ['Scheduled move', state.providers.northstar.moveDate ? formatDate(state.providers.northstar.moveDate) : 'Not scheduled']]
+      : service.id === 'postway'
+        ? [['Forwarding to', state.providers.postway.forwardingAddress ?? 'Not active'], ['Duration', state.providers.postway.forwardingMonths ? `${state.providers.postway.forwardingMonths} months` : '—']]
+        : service.id === 'wavelength'
+          ? [['Current plan', `${state.providers.wavelength.plan} · £${state.providers.wavelength.monthlyCost}/mo`], ['Service address', state.providers.wavelength.serviceAddress]]
+          : [['Employer address', state.providers.hearth.employerAddress], ['Marketing', state.providers.hearth.marketingPreferences]];
   return <><PanelHeading kicker="Fictional service" title={service.name} body={service.summary} />
-    <div className="provider-preview"><div className="provider-hero"><span className={`provider-big provider-${service.id}`}><ServiceGlyph id={service.id} /></span><div><strong>{service.name}</strong><p>{service.detail}</p></div></div><div className="mock-account"><span>Account holder</span><strong>David Adams</strong><span>Move date</span><strong>15 September 2026</strong></div><a href={`/providers/${service.id}`} target="_blank" rel="noreferrer">Open fictional service site <ExternalLink size={14} /></a></div>
+    <div className="provider-preview"><div className="provider-hero"><span className={`provider-big provider-${service.id}`}><ServiceGlyph id={service.id} /></span><div><strong>{service.name}</strong><p>{service.detail}</p></div></div><div className="mock-account"><span>Account number</span><strong>{provider.accountId}</strong>{accountRows.map(([label, value]) => <span className="account-pair" key={label}><small>{label}</small><b>{value}</b></span>)}</div><a href={`/providers/${service.id}`} target="_blank" rel="noreferrer">Open persistent service account <ExternalLink size={14} /></a></div>
     <section className="tool-list"><p className="section-kicker">RELAY tools for this service</p>{service.tools.length ? service.tools.map((tool) => <code key={tool}>{tool}</code>) : <p className="no-tools">No tools loaded — RELAY blocked this service before discovery.</p>}</section>
   </>;
 }

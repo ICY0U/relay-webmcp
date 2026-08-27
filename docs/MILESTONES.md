@@ -14,22 +14,24 @@ Test:
 
 Pass condition: no placeholder content, clipping, horizontal scroll, or console errors.
 
-## Milestone 2 — Permission and approval flow
+## Milestone 2 — Editable mission and persistent provider state
 
-Delivered: genuinely runnable and fully contained 0% state, sequential service execution, delegation-policy panel, human approval modal, completed-within-policy state, reset path, service details, live activity, and receipt timeline.
+Delivered: editable current address, destination, postcode, move date, forwarding period, and monthly-price threshold; a generated secure plan; genuinely runnable and fully contained 0% state; sequential service execution; delegation-policy panel; human approval modal; completed-within-policy state; persistent fictional provider records; reset path; service details; live activity; and receipt timeline.
 
 Test:
 
-1. Start at 0% with zero receipts, then press **Start secure mission**.
-2. Watch each service enter **Executing**, then **Complete**, and verify receipts increment to three.
-3. Confirm RELAY pauses at 75% with Wavelength at **Needs approval** and Hearth still blocked.
-4. Open **Permissions** and verify employer details and marketing preferences appear under **Never change**.
-5. Press **Review this decision**, confirm the exact price, move date, contract, and one-action scope.
-6. Acknowledge the £6 monthly increase, then press **Approve once & continue**.
-7. Verify the brief committing state, 100% completion, and a fourth Wavelength receipt.
-8. Reset the demo and repeat; verify the state returns to 0% with no stale receipts.
+1. Enter a recognizably custom address, postcode, move date, forwarding period, and approval threshold, then press **Build secure plan**.
+2. Verify the instruction and guardrail text use those exact values, then press **Start secure mission**.
+3. Watch each service enter **Executing**, then **Complete**, and verify receipts increment to three.
+4. Confirm RELAY pauses at 75% with Wavelength at **Needs approval** and Hearth still blocked.
+5. Open **Permissions** and verify employer details and marketing preferences appear under **Never change**.
+6. Press **Review this decision**, confirm the exact price, configured move date, contract, and one-action scope.
+7. Acknowledge the £6 monthly increase, then press **Approve once & continue**.
+8. Verify the brief committing state, 100% completion, and a fourth Wavelength receipt.
+9. Reload RELAY, verify the completed mission remains, then open Civic and confirm its registered address equals the custom destination.
+10. Reset the demo and verify the state returns to the mission composer with no stale receipts or provider changes.
 
-Pass condition: approval is explicit, exact, reversible in the demo, and auditable.
+Pass condition: configuration is real, approval is explicit and exact, fictional account changes persist across reload, and the full demo remains resettable and auditable.
 
 ## Milestone 3 — WebMCP orchestration
 
