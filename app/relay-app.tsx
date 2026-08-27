@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useRef, useState, type FormEvent } from 'react';
 import {
   Activity as ActivityIcon,
   ArrowRight,
@@ -16,19 +16,21 @@ import {
   Home,
   Info,
   LockKeyhole,
+  LoaderCircle,
   Mail,
   MoreHorizontal,
   Network,
   RadioTower,
   ReceiptText,
   RefreshCw,
+  Play,
   ShieldCheck,
   Sparkles,
   Wifi,
   X,
   Zap,
 } from 'lucide-react';
-import { approveInternetTransfer, INITIAL_STATE, POLICY, type RelayService, type RelayState } from '@/lib/relay';
+import { approveInternetTransfer, beginService, completeService, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, startMission, type RelayService, type RelayState } from '@/lib/relay';
 import { useWebMCP } from '@/lib/use-webmcp';
 
 type Drawer = 'permissions' | 'receipts' | 'activity' | 'service' | null;
@@ -52,32 +54,61 @@ export default function RelayApp() {
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [approvalAcknowledged, setApprovalAcknowledged] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const runToken = useRef(0);
+
+  const runMission = useCallback(async () => {
+    const token = ++runToken.current;
+    const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+    setState((current) => startMission(current));
+    await wait(450);
+    for (const serviceId of ['civic', 'northstar', 'postway']) {
+      if (token !== runToken.current) return;
+      setState((current) => beginService(current, serviceId));
+      await wait(720);
+      if (token !== runToken.current) return;
+      setState((current) => completeService(current, serviceId));
+      await wait(360);
+    }
+    if (token !== runToken.current) return;
+    setState((current) => beginService(current, 'wavelength'));
+    await wait(760);
+    if (token !== runToken.current) return;
+    setState((current) => requestInternetApproval(current));
+  }, []);
 
   const requestApproval = () => {
+    setState((current) => requestInternetApproval(current));
     setApprovalAcknowledged(false);
     setApprovalOpen(true);
   };
 
   const commitTransfer = () => {
-    setState((current) => approveInternetTransfer(current));
+    setState((current) => grantInternetApproval(current));
     setApprovalOpen(false);
     setApprovalAcknowledged(false);
-    setToast('Transfer complete — action receipt created');
-    window.setTimeout(() => setToast(null), 3400);
+    window.setTimeout(() => {
+      setState((current) => approveInternetTransfer(current));
+      setToast('Mission complete — 4 verified receipts created');
+      window.setTimeout(() => setToast(null), 3400);
+    }, 850);
   };
 
-  const webmcp = useWebMCP(state, requestApproval, commitTransfer);
+  const webmcp = useWebMCP(state, requestApproval, () => setState((current) => approveInternetTransfer(current)), runMission);
   const allowed = state.services.filter((service) => service.tone !== 'blocked');
   const completed = allowed.filter((service) => service.tone === 'done').length;
-  const isComplete = state.approvalStatus === 'approved';
+  const isComplete = state.missionStatus === 'complete';
+  const isReady = state.missionStatus === 'ready';
+  const isRunning = state.missionStatus === 'running';
+  const isCommitting = state.missionStatus === 'committing';
   const percentage = Math.round((completed / allowed.length) * 100);
 
-  const activity = useMemo(() => [
-    { time: '13:18:08', label: 'Postway created a forwarding receipt', kind: 'Tool result' },
-    { time: '13:18:04', label: 'Northstar scheduled the energy move', kind: 'Tool call' },
-    { time: '13:18:00', label: 'Civic committed the address update', kind: 'Tool call' },
-    { time: '13:17:54', label: 'RELAY checked your delegation policy', kind: 'Policy check' },
-  ], []);
+  const resetMission = () => {
+    runToken.current += 1;
+    setApprovalOpen(false);
+    setState(INITIAL_STATE);
+    setToast('Demo reset — ready for a fresh run');
+    window.setTimeout(() => setToast(null), 2400);
+  };
 
   function openService(service: RelayService) {
     setSelectedService(service);
@@ -140,11 +171,11 @@ export default function RelayApp() {
             <section className={`mission-hero ${isComplete ? 'complete' : ''}`}>
               <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
               <div className="hero-heading-row">
-                <span className="live-status"><i /> {isComplete ? 'Completed within your rules' : 'Agent paused safely'}</span>
+                <span className="live-status"><i /> {isComplete ? 'Completed within your rules' : isReady ? 'Ready for secure delegation' : isRunning || isCommitting ? 'Agent executing live' : 'Agent paused safely'}</span>
                 <span className="mission-id">MISSION-MOVE-0915</span>
               </div>
-              <h2>{isComplete ? 'Your move is coordinated.' : 'Move home without the admin.'}</h2>
-              <p className="hero-subtitle">{isComplete ? 'Every permitted action is complete. Protected details were left untouched.' : 'One instruction became a safe, auditable plan across five services.'}</p>
+              <h2>{isComplete ? 'Your move is coordinated.' : isReady ? 'Move home without the admin.' : isRunning || isCommitting ? 'Coordinating your move now.' : 'One decision needs you.'}</h2>
+              <p className="hero-subtitle">{isComplete ? 'Every permitted action is complete. Protected details were left untouched.' : isReady ? 'One instruction becomes a safe, auditable plan across five services.' : isRunning || isCommitting ? 'RELAY is calling structured service tools and recording every result.' : 'Three services are complete. RELAY stopped before changing your monthly cost.'}</p>
               <button className="intent-surface" onClick={() => setDrawer('permissions')}>
                 <Sparkles size={17} />
                 <span><small>Your instruction</small>“Move me on 15 September. Don’t touch employer details or marketing preferences.”</span>
@@ -169,7 +200,7 @@ export default function RelayApp() {
                     <span className="provider-details"><strong>{service.name}</strong><small>{service.detail}</small></span>
                     <span className="execution-step">Step {String(index + 1).padStart(2, '0')}</span>
                     <span className={`status-badge ${service.tone}`}>
-                      {service.tone === 'done' ? <CheckCircle2 size={14} /> : service.tone === 'review' ? <CircleAlert size={14} /> : <Ban size={14} />}
+                      {service.tone === 'done' ? <CheckCircle2 size={14} /> : service.tone === 'review' ? <CircleAlert size={14} /> : service.tone === 'running' ? <LoaderCircle className="spin" size={14} /> : service.tone === 'blocked' ? <Ban size={14} /> : <span className="queued-dot" />}
                       {service.status}
                     </span>
                     <ChevronRight className="row-chevron" size={18} />
@@ -180,7 +211,35 @@ export default function RelayApp() {
           </section>
 
           <aside className="dashboard-aside">
-            {!isComplete ? (
+            {isReady ? (
+              <section className="approval-card launch-card" data-testid="launch-card">
+                <div className="attention-icon launch-icon"><Play size={21} fill="currentColor" /></div>
+                <span className="approval-eyebrow">Live showcase</span>
+                <h2>Run the full mission</h2>
+                <p>Watch RELAY validate your policy, act across four services, create receipts, and stop when only you can decide.</p>
+                <div className="run-summary">
+                  <span><Network size={16} /><strong>4 service connections</strong></span>
+                  <span><ShieldCheck size={16} /><strong>1 human checkpoint</strong></span>
+                  <span><ReceiptText size={16} /><strong>Live action receipts</strong></span>
+                </div>
+                <button className="primary-action" onClick={() => void runMission()}>Run live mission <Play size={15} fill="currentColor" /></button>
+                <span className="no-action-note"><LockKeyhole size={12} /> Uses fictional accounts and safe demo data</span>
+              </section>
+            ) : isRunning || isCommitting ? (
+              <section className="approval-card running-card" data-testid="running-card">
+                <div className="attention-icon running-icon"><LoaderCircle className="spin" size={23} /></div>
+                <span className="approval-eyebrow">Agent working</span>
+                <h2>{isCommitting ? 'Committing approved change' : 'Executing your plan'}</h2>
+                <p>{isCommitting ? 'Your one-time approval is being exchanged for the exact Wavelength transfer you reviewed.' : 'Structured tools are running one service at a time. Every mutation produces a receipt.'}</p>
+                <div className="live-operation">
+                  <span className="live-operation-pulse" />
+                  <span><small>Current operation</small><strong>{state.services.find((service) => service.tone === 'running')?.name ?? 'Policy validation'}</strong></span>
+                  <em>{completed}/{allowed.length}</em>
+                </div>
+                <div className="mini-progress"><span style={{ width: `${percentage}%` }} /></div>
+                <span className="no-action-note"><LockKeyhole size={12} /> RELAY will pause automatically if your rules require it</span>
+              </section>
+            ) : !isComplete ? (
               <section className="approval-card" data-testid="approval-card">
                 <div className="attention-icon"><CircleAlert size={22} /></div>
                 <span className="approval-eyebrow">Your decision</span>
@@ -201,7 +260,7 @@ export default function RelayApp() {
                 <p>Four services were updated. Employer details and marketing preferences stayed protected.</p>
                 <div className="latest-receipt"><FileCheck2 size={20} /><span><small>Latest action receipt</small><strong>{state.receipts.at(-1)?.receiptId}</strong><em>Human approved · Wavelength</em></span></div>
                 <button className="primary-action" onClick={() => setDrawer('receipts')}>Review action receipts <ArrowRight size={17} /></button>
-                <button className="quiet-action" onClick={() => setState(INITIAL_STATE)}><RefreshCw size={14} /> Reset demo mission</button>
+                <button className="quiet-action" onClick={resetMission}><RefreshCw size={14} /> Reset demo mission</button>
               </section>
             )}
 
@@ -224,7 +283,7 @@ export default function RelayApp() {
             <button className="drawer-close" onClick={() => setDrawer(null)} aria-label="Close panel"><X size={18} /></button>
             {drawer === 'permissions' && <PermissionsPanel />}
             {drawer === 'receipts' && <ReceiptsPanel state={state} />}
-            {drawer === 'activity' && <ActivityPanel activity={activity} webmcp={webmcp} />}
+            {drawer === 'activity' && <ActivityPanel activity={state.activity} webmcp={webmcp} />}
             {drawer === 'service' && selectedService && <ServicePanel service={selectedService} />}
           </aside>
         </div>
@@ -291,14 +350,14 @@ function PolicyGroup({ tone, title, items }: { tone: string; title: string; item
 
 function ReceiptsPanel({ state }: { state: RelayState }) {
   return <><PanelHeading kicker="Append-only audit" title={`${state.receipts.length} action receipts`} body="Every external change has a compact, inspectable record." />
-    <div className="receipt-list">{[...state.receipts].reverse().map((receipt) => <article className="receipt" key={receipt.receiptId}><div className="receipt-top"><span className="receipt-check"><Check size={12} /></span><span>{receipt.service}</span><code>{receipt.receiptId}</code></div><h3>{receipt.action}</h3><div className="receipt-change"><span>{receipt.before}</span><ArrowRight size={13} /><span>{receipt.after}</span></div><footer><span>{receipt.approvedBy}</span><time>{new Date(receipt.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time></footer></article>)}</div>
+    {state.receipts.length === 0 ? <div className="empty-panel"><ReceiptText size={25} /><strong>No actions yet</strong><p>Run the mission and verified receipts will appear here in real time.</p></div> : <div className="receipt-list">{[...state.receipts].reverse().map((receipt) => <article className="receipt" key={receipt.receiptId}><div className="receipt-top"><span className="receipt-check"><Check size={12} /></span><span>{receipt.service}</span><code>{receipt.receiptId}</code></div><h3>{receipt.action}</h3><div className="receipt-change"><span>{receipt.before}</span><ArrowRight size={13} /><span>{receipt.after}</span></div><footer><span>{receipt.approvedBy}</span><time>{new Date(receipt.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time></footer></article>)}</div>}
   </>;
 }
 
-function ActivityPanel({ activity, webmcp }: { activity: { time: string; label: string; kind: string }[]; webmcp: { supported: boolean | null; registeredCount: number } }) {
+function ActivityPanel({ activity, webmcp }: { activity: RelayState['activity']; webmcp: { supported: boolean | null; registeredCount: number } }) {
   return <><PanelHeading kicker="Agent trace" title="Structured, not simulated." body="This timeline mirrors the same state used by the visible UI and WebMCP callbacks." />
     <div className={`mcp-status ${webmcp.supported ? 'live' : ''}`}><RadioTower size={18} /><div><strong>{webmcp.supported ? 'WebMCP available' : 'Human demo mode'}</strong><span>{webmcp.supported ? `${webmcp.registeredCount} RELAY tools registered` : 'The full visible flow remains available.'}</span></div></div>
-    <div className="activity-list">{activity.map((item) => <article key={item.time}><time>{item.time}</time><div><span>{item.kind}</span><p>{item.label}</p></div></article>)}</div>
+    {activity.length === 0 ? <div className="empty-panel"><ActivityIcon size={25} /><strong>Waiting to begin</strong><p>The live agent trace will appear here as each structured action runs.</p></div> : <div className="activity-list">{activity.map((item) => <article key={item.id}><time>{new Date(item.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time><div><span>{item.kind}</span><p>{item.label}</p></div></article>)}</div>}
   </>;
 }
 

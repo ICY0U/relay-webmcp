@@ -10,13 +10,13 @@ type ModelContext = {
 };
 declare global { interface Document { modelContext?: ModelContext; } }
 
-export function useWebMCP(state: RelayState, onApprovalRequested: () => void, onCommit: () => void) {
+export function useWebMCP(state: RelayState, onApprovalRequested: () => void, onCommit: () => void, onRunMission: () => Promise<void>) {
   const stateRef = useRef(state);
-  const callbacksRef = useRef({ onApprovalRequested, onCommit });
+  const callbacksRef = useRef({ onApprovalRequested, onCommit, onRunMission });
   const [registeredCount, setRegisteredCount] = useState(0);
 
   useEffect(() => { stateRef.current = state; }, [state]);
-  useEffect(() => { callbacksRef.current = { onApprovalRequested, onCommit }; }, [onApprovalRequested, onCommit]);
+  useEffect(() => { callbacksRef.current = { onApprovalRequested, onCommit, onRunMission }; }, [onApprovalRequested, onCommit, onRunMission]);
 
   useEffect(() => {
     const context = document.modelContext;
@@ -25,6 +25,7 @@ export function useWebMCP(state: RelayState, onApprovalRequested: () => void, on
       getState: () => stateRef.current,
       onApprovalRequested: () => callbacksRef.current.onApprovalRequested(),
       onCommit: () => callbacksRef.current.onCommit(),
+      onRunMission: () => callbacksRef.current.onRunMission(),
     });
     let cancelled = false;
     Promise.all(tools.map((tool) => Promise.resolve(context.registerTool(tool))))

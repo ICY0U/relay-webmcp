@@ -12,12 +12,13 @@ The agent can inspect accounts, preview changes, and complete low-risk actions w
 
 Ordinary browser automation guesses at pixels and page structure. RELAY instead uses focused, structured tools exposed through `document.modelContext`, plus a declarative semantic form for the final high-risk confirmation. The human and agent share the same live mission state and visible UI.
 
-The demo proves four ideas:
+The demo proves five ideas:
 
 1. **Structured delegation** — allowed fields, forbidden changes, spend boundaries, and expiry are explicit and enforced.
 2. **Preview before commit** — risky effects are calculated before any mutation.
 3. **Human approval gates** — the agent can open and prepare an approval, but cannot grant it.
 4. **Action receipts** — every mutation returns a compact, inspectable audit record.
+5. **Visible orchestration** — the mission begins at 0%, executes each fictional service in sequence, and keeps the UI, trace, and receipts synchronized.
 
 ## Run locally
 
@@ -38,13 +39,13 @@ npm run build
 
 ## Three-minute demo path
 
-1. Open RELAY and explain the single moving-home intent.
-2. Open **Permissions** to show allowed, approval-required, and forbidden scopes.
-3. Show the agent discovering `relay_get_mission`, `relay_get_permissions`, and the fictional provider tools.
-4. Invoke `internet_preview_transfer` with `2026-09-15` and the destination postcode.
-5. Show its `approval_required` result and invoke `relay_request_human_approval`.
-6. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
-7. Show mission completion, the untouched employer service, and the new Wavelength receipt.
+1. Open RELAY at 0% and explain the single moving-home intent and active guardrails.
+2. Press **Run live mission** and watch Civic, Northstar, and Postway execute and create receipts.
+3. Show RELAY pause at 75% before the Wavelength price increase while Hearth remains blocked.
+4. Open **Activity** to show the live structured trace, then **Permissions** to show the precise boundary.
+5. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
+6. Show mission completion, the untouched employer service, and all four receipts.
+7. In WebMCP-enabled Chrome, demonstrate `relay_execute_allowed_plan` or the preview/denied-commit/approval sequence.
 8. Open the Wavelength fictional service to show its imperative tools and declarative manual-approval form.
 
 ## WebMCP surface
@@ -54,6 +55,7 @@ npm run build
 | `relay_get_mission` | Read | Current mission and approval state |
 | `relay_get_permissions` | Read | Exact delegation boundaries |
 | `relay_get_service_plan` | Read | Providers, state, and tools |
+| `relay_execute_allowed_plan` | Mutation/orchestration | Runs allowed actions and pauses at the human gate |
 | `internet_preview_transfer` | Read/preview | Exact plan and price effects |
 | `relay_request_human_approval` | UI handoff | Opens the visible human gate; never approves |
 | `internet_commit_transfer` | Mutation | Rejects unless matching approval exists |

@@ -6,23 +6,26 @@ Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 
 ## Automated
 
-- `npm test`: 7/7 passed.
+- `npm test`: 9/9 passed.
 - `npm run lint`: passed with zero warnings or errors.
 - `npm run build`: production build passed for `/` and `/providers/:provider`.
+- `npm audit --omit=dev`: zero production vulnerabilities.
 
-Covered rules include initial approval pause, exact service mutation, blocked employer preservation, receipt creation, replay safety, preview non-mutation, denial before approval, visible approval request, and commit after approval.
+Covered rules include the genuine 0% starting state, sequential service mutation, blocked employer preservation, receipt creation, replay safety, preview non-mutation, denial before approval, visible approval request, agent orchestration, and commit after approval.
 
 ## Browser
 
 - Redesigned root mission-control route loaded successfully with labelled navigation, larger typography, recognizable service icons, and a clear human-decision column.
 - Permissions panel showed allow, ask, and never-change boundaries.
+- **Run live mission** visibly progressed Civic, Northstar, and Postway from Ready → Executing → Complete and created three receipts before pausing at 75%.
 - Approval modal showed exact £36 → £42 effects, date, contract, single-use scope, and kept the confirmation button disabled until the monthly increase was acknowledged.
 - Human confirmation changed the mission to complete-within-policy.
 - Wavelength receipt appeared as the fourth append-only receipt.
-- Reset returned the mission to the approval checkpoint.
+- Activity trace reflected policy checks, tool calls, tool results, and explicit human approval in real time.
+- Reset returned the mission to 0% with zero receipts, ready for a clean showcase rerun.
 - Wavelength service page exposed its imperative tool list and declarative `wavelength_confirm_plan` form.
 - Desktop (1440 × 900) and mobile (390 × 844) layouts were inspected for hierarchy, readability, clipping, and navigation.
-- Root and Wavelength pages produced no browser console warnings or errors.
+- The full ready → running → approval → committing → complete journey produced no browser console warnings or errors.
 
 ## Remaining judge-environment check
 
