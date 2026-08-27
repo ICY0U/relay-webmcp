@@ -16,11 +16,11 @@ Pass condition: no placeholder content, clipping, horizontal scroll, or console 
 
 ## Milestone 2 — Permission and approval flow
 
-Delivered: genuinely runnable 0% state, sequential service execution, delegation-policy panel, human approval modal, completed-within-policy state, reset path, service details, live activity, and receipt timeline.
+Delivered: genuinely runnable and fully contained 0% state, sequential service execution, delegation-policy panel, human approval modal, completed-within-policy state, reset path, service details, live activity, and receipt timeline.
 
 Test:
 
-1. Start at 0% with zero receipts, then press **Run live mission**.
+1. Start at 0% with zero receipts, then press **Start secure mission**.
 2. Watch each service enter **Executing**, then **Complete**, and verify receipts increment to three.
 3. Confirm RELAY pauses at 75% with Wavelength at **Needs approval** and Hearth still blocked.
 4. Open **Permissions** and verify employer details and marketing preferences appear under **Never change**.

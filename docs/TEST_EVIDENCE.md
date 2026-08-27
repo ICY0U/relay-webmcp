@@ -17,9 +17,9 @@ Covered rules include the genuine 0% starting state, real provider-tool-driven s
 
 - Redesigned root mission-control route loaded successfully with labelled navigation, larger typography, recognizable service icons, and a clear human-decision column.
 - Permissions panel showed allow, ask, and never-change boundaries.
-- Agent Mode presents a ready-to-copy ChatGPT instruction and distinguishes the real WebMCP path from the guided fallback.
+- The primary experience is fully contained: **Start secure mission** executes, pauses for approval, commits, and produces receipts without requiring a ChatGPT prompt handoff.
 - The provider-level integration test invoked seven actual tool definitions to move Civic, Northstar, Postway, and Wavelength to the 75% approval boundary.
-- **Run guided showcase** remained available and visibly progressed Civic, Northstar, and Postway from Ready → Executing → Complete before pausing at 75%.
+- The built-in RELAY runner visibly progressed Civic, Northstar, and Postway from Ready → Executing → Complete before pausing at 75%.
 - Approval modal showed exact £36 → £42 effects, date, contract, single-use scope, and kept the confirmation button disabled until the monthly increase was acknowledged.
 - Human confirmation changed the mission to complete-within-policy.
 - Wavelength receipt appeared as the fourth append-only receipt.

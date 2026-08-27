@@ -18,7 +18,7 @@ The demo proves five ideas:
 2. **Preview before commit** — risky effects are calculated before any mutation.
 3. **Human approval gates** — the agent can open and prepare an approval, but cannot grant it.
 4. **Action receipts** — every mutation returns a compact, inspectable audit record.
-5. **Visible orchestration** — real provider-level WebMCP tool calls drive the mission state, activity trace, and receipts. A clearly labelled guided fallback remains available for browsers without WebMCP.
+5. **Visible orchestration** — RELAY contains a complete built-in mission runner, while real provider-level WebMCP tool calls can also drive the same mission state, activity trace, and receipts.
 
 ## Run locally
 
@@ -40,12 +40,12 @@ npm run build
 ## Three-minute demo path
 
 1. Open RELAY at 0% and explain the single moving-home intent and active guardrails.
-2. Copy the **Agent Mode** prompt into ChatGPT and let the agent inspect permissions.
-3. Show the agent invoke Civic, Northstar, and Postway preview/commit tools; each call changes the visible mission and creates a receipt.
+2. Press **Start secure mission** without leaving RELAY.
+3. Show Civic, Northstar, and Postway execute in sequence; each action changes the visible mission and creates a receipt.
 4. Show RELAY pause at 75% before the Wavelength price increase while Hearth remains blocked.
 5. Open **Activity** to show the live structured trace, then **Permissions** to show the precise boundary.
 6. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
-7. Let the agent call `internet_commit_transfer`, then show completion and all four receipts.
+7. Show RELAY commit the narrowly approved transfer, then show completion and all four receipts.
 8. Open the Wavelength fictional service to show its standalone WebMCP surface and declarative manual-approval form.
 
 ## WebMCP surface
@@ -62,7 +62,7 @@ npm run build
 | `relay_list_receipts` | Read | Compact audit timeline |
 | `relay_get_receipt` | Read | Full structured receipt |
 
-The mission page registers nineteen tools, including provider-level account, preview, and commit actions whose callbacks update the visible mission state. The four fictional provider pages also expose their own standalone tool surfaces. Wavelength includes the declarative `wavelength_confirm_plan` form without autosubmit so only a person can submit it.
+The mission page registers nineteen tools, including provider-level account, preview, and commit actions whose callbacks update the visible mission state. These provide an additional interface for ChatGPT and other WebMCP agents; the human-facing mission remains fully usable without leaving RELAY. The four fictional provider pages also expose their own standalone tool surfaces. Wavelength includes the declarative `wavelength_confirm_plan` form without autosubmit so only a person can submit it.
 
 ## Security design
 
