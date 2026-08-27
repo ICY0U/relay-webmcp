@@ -11,13 +11,15 @@ Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 - `npm run build`: production build passed for `/` and `/providers/:provider`.
 - `npm audit --omit=dev`: zero production vulnerabilities.
 
-Covered rules include the genuine 0% starting state, sequential service mutation, blocked employer preservation, receipt creation, replay safety, preview non-mutation, denial before approval, visible approval request, agent orchestration, and commit after approval.
+Covered rules include the genuine 0% starting state, real provider-tool-driven service mutation, enforced service order, blocked employer preservation, receipt creation, replay safety, denial before preview, denial before approval, visible approval request, guided fallback, and commit after approval.
 
 ## Browser
 
 - Redesigned root mission-control route loaded successfully with labelled navigation, larger typography, recognizable service icons, and a clear human-decision column.
 - Permissions panel showed allow, ask, and never-change boundaries.
-- **Run live mission** visibly progressed Civic, Northstar, and Postway from Ready → Executing → Complete and created three receipts before pausing at 75%.
+- Agent Mode presents a ready-to-copy ChatGPT instruction and distinguishes the real WebMCP path from the guided fallback.
+- The provider-level integration test invoked seven actual tool definitions to move Civic, Northstar, Postway, and Wavelength to the 75% approval boundary.
+- **Run guided showcase** remained available and visibly progressed Civic, Northstar, and Postway from Ready → Executing → Complete before pausing at 75%.
 - Approval modal showed exact £36 → £42 effects, date, contract, single-use scope, and kept the confirmation button disabled until the monthly increase was acknowledged.
 - Human confirmation changed the mission to complete-within-policy.
 - Wavelength receipt appeared as the fourth append-only receipt.

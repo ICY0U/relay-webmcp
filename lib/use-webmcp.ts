@@ -8,22 +8,35 @@ type ModelContext = {
   registerTool: (tool: ToolDefinition) => Promise<void> | void;
   unregisterTool?: (name: string) => Promise<void> | void;
 };
+
+type WebMCPCallbacks = {
+  onApprovalRequired: () => void;
+  onApprovalRequested: () => void;
+  onBeginService: (serviceId: string) => void;
+  onCompleteService: (serviceId: string) => void;
+  onCommit: () => void;
+  onRunMission: () => Promise<void>;
+};
+
 declare global { interface Document { modelContext?: ModelContext; } }
 
-export function useWebMCP(state: RelayState, onApprovalRequested: () => void, onCommit: () => void, onRunMission: () => Promise<void>) {
+export function useWebMCP(state: RelayState, callbacks: WebMCPCallbacks) {
   const stateRef = useRef(state);
-  const callbacksRef = useRef({ onApprovalRequested, onCommit, onRunMission });
+  const callbacksRef = useRef(callbacks);
   const [registeredCount, setRegisteredCount] = useState(0);
 
   useEffect(() => { stateRef.current = state; }, [state]);
-  useEffect(() => { callbacksRef.current = { onApprovalRequested, onCommit, onRunMission }; }, [onApprovalRequested, onCommit, onRunMission]);
+  useEffect(() => { callbacksRef.current = callbacks; }, [callbacks]);
 
   useEffect(() => {
     const context = document.modelContext;
     if (!context?.registerTool) return;
     const tools = createRelayTools({
       getState: () => stateRef.current,
+      onApprovalRequired: () => callbacksRef.current.onApprovalRequired(),
       onApprovalRequested: () => callbacksRef.current.onApprovalRequested(),
+      onBeginService: (serviceId) => callbacksRef.current.onBeginService(serviceId),
+      onCompleteService: (serviceId) => callbacksRef.current.onCompleteService(serviceId),
       onCommit: () => callbacksRef.current.onCommit(),
       onRunMission: () => callbacksRef.current.onRunMission(),
     });
@@ -36,5 +49,6 @@ export function useWebMCP(state: RelayState, onApprovalRequested: () => void, on
       if (context.unregisterTool) tools.forEach((tool) => void context.unregisterTool?.(tool.name));
     };
   }, []);
+
   return { supported: registeredCount > 0, registeredCount };
 }

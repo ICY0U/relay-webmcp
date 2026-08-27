@@ -18,7 +18,7 @@ The demo proves five ideas:
 2. **Preview before commit** — risky effects are calculated before any mutation.
 3. **Human approval gates** — the agent can open and prepare an approval, but cannot grant it.
 4. **Action receipts** — every mutation returns a compact, inspectable audit record.
-5. **Visible orchestration** — the mission begins at 0%, executes each fictional service in sequence, and keeps the UI, trace, and receipts synchronized.
+5. **Visible orchestration** — real provider-level WebMCP tool calls drive the mission state, activity trace, and receipts. A clearly labelled guided fallback remains available for browsers without WebMCP.
 
 ## Run locally
 
@@ -40,13 +40,13 @@ npm run build
 ## Three-minute demo path
 
 1. Open RELAY at 0% and explain the single moving-home intent and active guardrails.
-2. Press **Run live mission** and watch Civic, Northstar, and Postway execute and create receipts.
-3. Show RELAY pause at 75% before the Wavelength price increase while Hearth remains blocked.
-4. Open **Activity** to show the live structured trace, then **Permissions** to show the precise boundary.
-5. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
-6. Show mission completion, the untouched employer service, and all four receipts.
-7. In WebMCP-enabled Chrome, demonstrate `relay_execute_allowed_plan` or the preview/denied-commit/approval sequence.
-8. Open the Wavelength fictional service to show its imperative tools and declarative manual-approval form.
+2. Copy the **Agent Mode** prompt into ChatGPT and let the agent inspect permissions.
+3. Show the agent invoke Civic, Northstar, and Postway preview/commit tools; each call changes the visible mission and creates a receipt.
+4. Show RELAY pause at 75% before the Wavelength price increase while Hearth remains blocked.
+5. Open **Activity** to show the live structured trace, then **Permissions** to show the precise boundary.
+6. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
+7. Let the agent call `internet_commit_transfer`, then show completion and all four receipts.
+8. Open the Wavelength fictional service to show its standalone WebMCP surface and declarative manual-approval form.
 
 ## WebMCP surface
 
@@ -55,14 +55,14 @@ npm run build
 | `relay_get_mission` | Read | Current mission and approval state |
 | `relay_get_permissions` | Read | Exact delegation boundaries |
 | `relay_get_service_plan` | Read | Providers, state, and tools |
-| `relay_execute_allowed_plan` | Mutation/orchestration | Runs allowed actions and pauses at the human gate |
+| `relay_execute_allowed_plan` | Guided fallback | Runs the visible fallback and pauses at the human gate |
 | `internet_preview_transfer` | Read/preview | Exact plan and price effects |
 | `relay_request_human_approval` | UI handoff | Opens the visible human gate; never approves |
 | `internet_commit_transfer` | Mutation | Rejects unless matching approval exists |
 | `relay_list_receipts` | Read | Compact audit timeline |
 | `relay_get_receipt` | Read | Full structured receipt |
 
-The four fictional provider pages expose additional single-purpose tools in same-origin descendant frames. Wavelength also exposes the declarative `wavelength_confirm_plan` form without autosubmit so only a person can submit it.
+The mission page registers nineteen tools, including provider-level account, preview, and commit actions whose callbacks update the visible mission state. The four fictional provider pages also expose their own standalone tool surfaces. Wavelength includes the declarative `wavelength_confirm_plan` form without autosubmit so only a person can submit it.
 
 ## Security design
 

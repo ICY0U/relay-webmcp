@@ -6,11 +6,13 @@ import {
   ArrowRight,
   BadgeCheck,
   Ban,
+  Bot,
   BriefcaseBusiness,
   Check,
   CheckCircle2,
   ChevronRight,
   CircleAlert,
+  Copy,
   ExternalLink,
   FileCheck2,
   Home,
@@ -49,6 +51,7 @@ function ServiceGlyph({ id }: { id: string }) {
 
 export default function RelayApp() {
   const [state, setState] = useState<RelayState>(INITIAL_STATE);
+  const [runMode, setRunMode] = useState<'agent' | 'guided' | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
   const [selectedService, setSelectedService] = useState<RelayService | null>(null);
   const [approvalOpen, setApprovalOpen] = useState(false);
@@ -59,6 +62,7 @@ export default function RelayApp() {
   const runMission = useCallback(async () => {
     const token = ++runToken.current;
     const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+    setRunMode('guided');
     setState((current) => startMission(current));
     await wait(450);
     for (const serviceId of ['civic', 'northstar', 'postway']) {
@@ -86,6 +90,11 @@ export default function RelayApp() {
     setState((current) => grantInternetApproval(current));
     setApprovalOpen(false);
     setApprovalAcknowledged(false);
+    if (runMode === 'agent') {
+      setToast('One-time approval granted — the agent may now commit');
+      window.setTimeout(() => setToast(null), 3400);
+      return;
+    }
     window.setTimeout(() => {
       setState((current) => approveInternetTransfer(current));
       setToast('Mission complete — 4 verified receipts created');
@@ -93,7 +102,21 @@ export default function RelayApp() {
     }, 850);
   };
 
-  const webmcp = useWebMCP(state, requestApproval, () => setState((current) => approveInternetTransfer(current)), runMission);
+  const webmcp = useWebMCP(state, {
+    onApprovalRequired: () => setState((current) => requestInternetApproval(current)),
+    onApprovalRequested: requestApproval,
+    onBeginService: (serviceId) => {
+      setRunMode('agent');
+      setState((current) => beginService(startMission(current), serviceId));
+    },
+    onCompleteService: (serviceId) => setState((current) => completeService(current, serviceId)),
+    onCommit: () => {
+      setState((current) => approveInternetTransfer(current));
+      setToast('Agent commit verified — receipt RCT-WAV-0915 created');
+      window.setTimeout(() => setToast(null), 3400);
+    },
+    onRunMission: runMission,
+  });
   const allowed = state.services.filter((service) => service.tone !== 'blocked');
   const completed = allowed.filter((service) => service.tone === 'done').length;
   const isComplete = state.missionStatus === 'complete';
@@ -104,6 +127,7 @@ export default function RelayApp() {
 
   const resetMission = () => {
     runToken.current += 1;
+    setRunMode(null);
     setApprovalOpen(false);
     setState(INITIAL_STATE);
     setToast('Demo reset — ready for a fresh run');
@@ -213,24 +237,26 @@ export default function RelayApp() {
           <aside className="dashboard-aside">
             {isReady ? (
               <section className="approval-card launch-card" data-testid="launch-card">
-                <div className="attention-icon launch-icon"><Play size={21} fill="currentColor" /></div>
-                <span className="approval-eyebrow">Live showcase</span>
-                <h2>Run the full mission</h2>
-                <p>Watch RELAY validate your policy, act across four services, create receipts, and stop when only you can decide.</p>
-                <div className="run-summary">
-                  <span><Network size={16} /><strong>4 service connections</strong></span>
-                  <span><ShieldCheck size={16} /><strong>1 human checkpoint</strong></span>
-                  <span><ReceiptText size={16} /><strong>Live action receipts</strong></span>
-                </div>
-                <button className="primary-action" onClick={() => void runMission()}>Run live mission <Play size={15} fill="currentColor" /></button>
-                <span className="no-action-note"><LockKeyhole size={12} /> Uses fictional accounts and safe demo data</span>
+                <div className="attention-icon launch-icon"><Bot size={22} /></div>
+                <span className="approval-eyebrow">Agent mode · recommended</span>
+                <h2>Hand the mission to ChatGPT</h2>
+                <p>Use the real WebMCP tools. Every provider call will update this mission and its audit trail.</p>
+                <div className="agent-prompt"><small>Prompt for ChatGPT</small><p>Use RELAY’s WebMCP tools to execute my moving-home mission. Inspect permissions first, complete only allowed actions, and stop when human approval is required.</p></div>
+                <button className="primary-action" onClick={() => {
+                  void navigator.clipboard.writeText('Use RELAY’s WebMCP tools to execute my moving-home mission. Inspect permissions first, complete only allowed actions, and stop when human approval is required.');
+                  setToast('Agent prompt copied — paste it into ChatGPT');
+                  window.setTimeout(() => setToast(null), 2800);
+                }}><Copy size={15} /> Copy agent prompt</button>
+                <div className="mode-divider"><span>or test without an agent</span></div>
+                <button className="quiet-action" onClick={() => void runMission()}><Play size={14} fill="currentColor" /> Run guided showcase</button>
+                <span className="no-action-note"><RadioTower size={12} /> {webmcp.supported ? `${webmcp.registeredCount} live tools ready` : 'Guided mode available in this browser'}</span>
               </section>
             ) : isRunning || isCommitting ? (
               <section className="approval-card running-card" data-testid="running-card">
                 <div className="attention-icon running-icon"><LoaderCircle className="spin" size={23} /></div>
                 <span className="approval-eyebrow">Agent working</span>
-                <h2>{isCommitting ? 'Committing approved change' : 'Executing your plan'}</h2>
-                <p>{isCommitting ? 'Your one-time approval is being exchanged for the exact Wavelength transfer you reviewed.' : 'Structured tools are running one service at a time. Every mutation produces a receipt.'}</p>
+                <h2>{isCommitting ? (runMode === 'agent' ? 'Approval granted to the agent' : 'Committing approved change') : 'Executing your plan'}</h2>
+                <p>{isCommitting ? (runMode === 'agent' ? 'RELAY is waiting for the agent to call the exact approved Wavelength commit tool.' : 'Your one-time approval is being exchanged for the exact Wavelength transfer you reviewed.') : 'Structured tools are running one service at a time. Every mutation produces a receipt.'}</p>
                 <div className="live-operation">
                   <span className="live-operation-pulse" />
                   <span><small>Current operation</small><strong>{state.services.find((service) => service.tone === 'running')?.name ?? 'Policy validation'}</strong></span>
@@ -316,9 +342,6 @@ export default function RelayApp() {
       )}
 
       {toast && <div className="toast relay-toast" role="status"><CheckCircle2 size={17} />{toast}</div>}
-      <div className="frame-bank" aria-hidden="true">
-        {state.services.filter((service) => service.tools.length).map((service) => <iframe key={service.id} src={`/providers/${service.id}`} title={`${service.name} WebMCP provider`} allow="tools" />)}
-      </div>
     </main>
   );
 }

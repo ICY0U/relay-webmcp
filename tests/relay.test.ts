@@ -14,7 +14,10 @@ import { createRelayTools, type RelayToolCallbacks } from '../lib/relay-tools';
 function callbacks(overrides: Partial<RelayToolCallbacks> = {}): RelayToolCallbacks {
   return {
     getState: () => INITIAL_STATE,
+    onApprovalRequired: vi.fn(),
     onApprovalRequested: vi.fn(),
+    onBeginService: vi.fn(),
+    onCompleteService: vi.fn(),
     onCommit: vi.fn(),
     onRunMission: vi.fn(),
     ...overrides,
@@ -63,11 +66,27 @@ describe('RELAY delegation state', () => {
 });
 
 describe('RELAY WebMCP tools', () => {
-  it('previews a price-changing transfer without mutation', async () => {
-    const tools = createRelayTools(callbacks());
-    const preview = tools.find((tool) => tool.name === 'internet_preview_transfer');
-    expect(await preview?.execute({ moveDate: '2026-09-15', postcode: 'SE1 2AB' })).toMatchObject({ status: 'approval_required', proposalId: 'PROP-WAV-300' });
-    expect(INITIAL_STATE.receipts).toHaveLength(0);
+  it('lets real provider tool calls drive the visible mission to the approval boundary', async () => {
+    let state = INITIAL_STATE;
+    const tools = createRelayTools(callbacks({
+      getState: () => state,
+      onBeginService: (serviceId) => { state = beginService(startMission(state), serviceId); },
+      onCompleteService: (serviceId) => { state = completeService(state, serviceId); },
+      onApprovalRequired: () => { state = requestInternetApproval(state); },
+    }));
+    const call = (name: string, input: unknown = {}) => tools.find((tool) => tool.name === name)?.execute(input);
+
+    expect(await call('council_preview_move', { newAddress: '18 River Lane', moveDate: '2026-09-15' })).toMatchObject({ status: 'ready', policyDecision: 'allowed' });
+    expect(await call('council_commit_move')).toMatchObject({ receiptId: 'RCT-CIV-0915' });
+    expect(await call('energy_preview_move', { moveDate: '2026-09-15' })).toMatchObject({ status: 'ready' });
+    expect(await call('energy_schedule_move')).toMatchObject({ receiptId: 'RCT-ENE-0915' });
+    expect(await call('postal_preview_forwarding', { months: 6 })).toMatchObject({ status: 'ready' });
+    expect(await call('postal_schedule_forwarding')).toMatchObject({ receiptId: 'RCT-PST-0915' });
+    expect(await call('internet_preview_transfer', { moveDate: '2026-09-15', postcode: 'SE1 2AB' })).toMatchObject({ status: 'approval_required', proposalId: 'PROP-WAV-300' });
+
+    expect(state.missionStatus).toBe('waiting_for_human_approval');
+    expect(state.receipts).toHaveLength(3);
+    expect(state.services.find((service) => service.id === 'wavelength')?.tone).toBe('review');
   });
 
   it('rejects a commit before explicit human approval', async () => {

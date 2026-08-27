@@ -33,20 +33,20 @@ Pass condition: approval is explicit, exact, reversible in the demo, and auditab
 
 ## Milestone 3 — WebMCP orchestration
 
-Delivered: nine focused imperative tools with JSON schemas, read-only hints, structured results, an orchestration tool, preview/commit separation, visible approval handoff, denial handling, and unsupported-browser fallback.
+Delivered: nineteen focused tools with JSON schemas, provider-level account/preview/commit actions, read-only hints, structured results, a guided fallback, preview/commit separation, visible approval handoff, sequence enforcement, denial handling, and unsupported-browser fallback.
 
 Test in Chrome 149+ with WebMCP enabled:
 
 1. Open DevTools → Application → WebMCP.
-2. Confirm the RELAY tools and same-origin provider tools appear.
+2. Confirm nineteen RELAY and provider tools appear.
 3. Invoke `relay_get_permissions` with `{}`.
-4. Reset the mission, invoke `relay_execute_allowed_plan` with `{}`, and verify the visible mission executes then pauses.
-5. Invoke `internet_preview_transfer` with `{"moveDate":"2026-09-15","postcode":"SE1 2AB"}` and verify `approval_required`.
+4. Invoke the Civic, Northstar, and Postway preview/commit pairs in sequence and verify each visible row and receipt updates from the tool call.
+5. Invoke `internet_preview_transfer` with `{"moveDate":"2026-09-15","postcode":"SE1 2AB"}` and verify the visible mission pauses at 75% with `approval_required`.
 6. Invoke `internet_commit_transfer` before approving and verify `human_approval_required`.
 7. Invoke `relay_request_human_approval`, make the decision in the visible UI, then invoke commit again.
 8. Inspect `relay_list_receipts` and the visible receipt panel.
 
-Pass condition: a commit cannot bypass the human gate and tool state matches visible state.
+Pass condition: provider tool calls—not timers—drive the visible mission, a commit cannot bypass the human gate, and structured tool state matches visible state.
 
 ## Milestone 4 — Fictional provider sites
 
