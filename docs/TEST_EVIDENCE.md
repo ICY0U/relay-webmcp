@@ -2,6 +2,8 @@
 
 Verification date: 27 August 2026
 
+Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
+
 ## Automated
 
 - `npm test`: 7/7 passed.

@@ -2,6 +2,8 @@
 
 **One intent. Many websites.**
 
+**Live demo:** https://relay-webmcp.creamy-ibex-1200.chatgpt.site
+
 RELAY is a WebMCP-native mission control for safely delegating a life event across multiple websites. The competition demo turns “I’m moving home” into a coordinated plan across fictional council, energy, postal, broadband, and employer services.
 
 The agent can inspect accounts, preview changes, and complete low-risk actions within an explicit delegation policy. When Wavelength proposes a £6 monthly increase, RELAY stops at a visible human approval gate. Every completed mutation creates an append-only action receipt.
@@ -86,7 +88,7 @@ docs/TEST_EVIDENCE.md             latest verification record
 
 ## Competition readiness
 
-The official rules require a live URL, a public licensed source repository, a clear implementation description, and a public YouTube demo under three minutes. Before submission, enable the production WebMCP browser flag, record the golden path plus at least one denial, add the final live URL, and freeze/tag the submitted revision.
+The official rules require a live URL, a public licensed source repository, a clear implementation description, and a public YouTube demo under three minutes. Before submission, enable the production WebMCP browser flag, record the golden path plus at least one denial, publish the repository publicly, and freeze/tag the submitted revision.
 
 ## License
 

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('http://localhost:3000'),
+  metadataBase: new URL('https://relay-webmcp.creamy-ibex-1200.chatgpt.site'),
   title: 'RELAY — One intent. Many websites.',
   description: 'A safe delegation layer for AI agents acting across the web.',
   icons: { icon: '/og.png' },
