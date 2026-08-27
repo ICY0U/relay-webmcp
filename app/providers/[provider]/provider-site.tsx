@@ -1,7 +1,7 @@
 'use client';
+/* eslint-disable @next/next/no-html-link-for-pages -- Native navigation avoids a vinext RSC prefetch failure on deployed provider pages. */
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { approveInternetTransfer, beginService, completeService, INITIAL_STATE, requestInternetApproval, startMission, type RelayState } from '@/lib/relay';
 import { loadRelayState, mutateRelayState, RELAY_STORAGE_KEY } from '@/lib/relay-storage';
 
@@ -149,7 +149,7 @@ export default function ProviderSite({ config }: { config: ProviderConfig }) {
   }, [config.id]);
 
   return <main className="provider-site" style={{ '--provider-accent': config.accent } as React.CSSProperties}>
-    <header className="provider-nav"><Link href="/" className="provider-brand"><b>{config.name[0]}</b><span>{config.name}<small>{config.category}</small></span></Link><nav><a href="#account">Account</a><a href="#move">Moving home</a><Link href="/">Back to RELAY</Link></nav></header>
+    <header className="provider-nav"><a href="/" className="provider-brand"><b>{config.name[0]}</b><span>{config.name}<small>{config.category}</small></span></a><nav><a href="#account">Account</a><a href="#move">Moving home</a><a href="/">Back to RELAY</a></nav></header>
     <section className="provider-page-hero"><div><span className="provider-tag">Persistent fictional account</span><h1>{config.headline}</h1><p>This service reads and writes the same browser-local provider ledger used by RELAY and its WebMCP actions.</p><a href="#move" className="provider-cta">Review live account <span>↓</span></a></div><div className="provider-orb"><span>{config.name[0]}</span><i /></div></section>
     <section className="provider-content" id="account">
       <article><p className="eyebrow">Live account</p><h2>Hello, David.</h2><dl><div><dt>Account number</dt><dd>{config.account}</dd></div>{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></article>
