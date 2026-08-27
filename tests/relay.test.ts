@@ -29,18 +29,18 @@ function callbacks(overrides: Partial<RelayToolCallbacks> = {}): RelayToolCallba
 }
 
 describe('RELAY delegation state', () => {
-  it('turns an editable draft into a runnable mission with no pre-created receipts', () => {
+  it('turns an editable draft into a runnable move plan with no pre-created receipts', () => {
     expect(getMissionSnapshot(INITIAL_STATE).status).toBe('draft');
     const snapshot = getMissionSnapshot(READY_STATE);
     expect(snapshot.status).toBe('ready');
     expect(snapshot.completed).toBe(0);
-    expect(snapshot.totalAllowed).toBe(4);
+    expect(snapshot.totalAllowed).toBe(6);
     expect(READY_STATE.receipts).toHaveLength(0);
   });
 
   it('executes allowed services and creates one receipt for each mutation', () => {
     let state = startMission(READY_STATE, new Date('2026-08-27T14:00:00.000Z'));
-    for (const id of ['civic', 'northstar', 'postway']) {
+    for (const id of ['civic', 'northstar', 'clearflow', 'postway', 'haven']) {
       state = beginService(state, id);
       state = completeService(state, id);
     }
@@ -49,7 +49,7 @@ describe('RELAY delegation state', () => {
     expect(state.missionStatus).toBe('waiting_for_human_approval');
     expect(state.services.find((service) => service.id === 'wavelength')?.status).toBe('Needs approval');
     expect(state.services.find((service) => service.id === 'hearth')?.status).toBe('Blocked by rule');
-    expect(state.receipts).toHaveLength(3);
+    expect(state.receipts).toHaveLength(5);
   });
 
   it('projects custom mission values into provider accounts and receipts', () => {
@@ -63,12 +63,17 @@ describe('RELAY delegation state', () => {
     });
     let state = completeService(beginService(startMission(custom), 'civic'), 'civic');
     state = completeService(beginService(state, 'northstar'), 'northstar');
+    state = completeService(beginService(state, 'clearflow'), 'clearflow');
     state = completeService(beginService(state, 'postway'), 'postway');
+    state = completeService(beginService(state, 'haven'), 'haven');
     expect(state.providers.civic.registeredAddress).toBe('88 Beacon Street');
     expect(state.providers.northstar.moveDate).toBe('2026-09-22');
+    expect(state.providers.clearflow.serviceAddress).toBe('88 Beacon Street');
     expect(state.providers.postway.forwardingMonths).toBe(12);
+    expect(state.providers.haven.insuredAddress).toBe('88 Beacon Street');
     expect(state.receipts[0]).toMatchObject({ before: '7 Horizon Way', after: '88 Beacon Street' });
-    expect(state.receipts[2].after).toContain('12 months');
+    expect(state.receipts[3].after).toContain('12 months');
+    expect(state.receipts[4].after).toContain('£28/mo unchanged');
   });
 
   it('requires explicit approval before completing the internet transfer', () => {
@@ -84,7 +89,7 @@ describe('RELAY delegation state', () => {
   it('completes a £6 increase automatically only when the configured threshold allows it', () => {
     const configured = configureMission(INITIAL_STATE, { ...DEFAULT_MISSION, approvalThreshold: 10 });
     let state = startMission(configured);
-    for (const id of ['civic', 'northstar', 'postway']) state = completeService(beginService(state, id), id);
+    for (const id of ['civic', 'northstar', 'clearflow', 'postway', 'haven']) state = completeService(beginService(state, id), id);
     state = requestInternetApproval(beginService(state, 'wavelength'));
     expect(state.missionStatus).toBe('complete');
     expect(state.receipts.at(-1)).toMatchObject({ service: 'Wavelength', approvedBy: 'delegation-policy' });
@@ -99,7 +104,13 @@ describe('RELAY delegation state', () => {
 });
 
 describe('RELAY WebMCP tools', () => {
-  it('lets real provider tool calls drive the visible mission to the approval boundary', async () => {
+  it('exposes the expanded move-plan and provider tool surface', () => {
+    const names = createRelayTools(callbacks()).map((tool) => tool.name);
+    expect(names).toHaveLength(25);
+    expect(names).toEqual(expect.arrayContaining(['relay_get_move_plan', 'water_preview_move', 'insurance_preview_address_change']));
+  });
+
+  it('lets real provider tool calls drive the visible move plan to the approval boundary', async () => {
     let state = READY_STATE;
     const tools = createRelayTools(callbacks({
       getState: () => state,
@@ -113,12 +124,16 @@ describe('RELAY WebMCP tools', () => {
     expect(await call('council_commit_move')).toMatchObject({ receiptId: 'RCT-CIV-0915' });
     expect(await call('energy_preview_move', { moveDate: '2026-09-15' })).toMatchObject({ status: 'ready' });
     expect(await call('energy_schedule_move')).toMatchObject({ receiptId: 'RCT-ENE-0915' });
+    expect(await call('water_preview_move', { moveDate: '2026-09-15', postcode: 'SE1 2AB' })).toMatchObject({ status: 'ready' });
+    expect(await call('water_schedule_move')).toMatchObject({ receiptId: 'RCT-WTR-0915' });
     expect(await call('postal_preview_forwarding', { months: 6 })).toMatchObject({ status: 'ready' });
     expect(await call('postal_schedule_forwarding')).toMatchObject({ receiptId: 'RCT-PST-0915' });
+    expect(await call('insurance_preview_address_change', { newAddress: '18 River Lane', moveDate: '2026-09-15' })).toMatchObject({ status: 'ready', proposedPremium: 28 });
+    expect(await call('insurance_commit_address_change')).toMatchObject({ receiptId: 'RCT-HVN-0915' });
     expect(await call('internet_preview_transfer', { moveDate: '2026-09-15', postcode: 'SE1 2AB' })).toMatchObject({ status: 'approval_required', proposalId: 'PROP-WAV-300' });
 
     expect(state.missionStatus).toBe('waiting_for_human_approval');
-    expect(state.receipts).toHaveLength(3);
+    expect(state.receipts).toHaveLength(5);
     expect(state.services.find((service) => service.id === 'wavelength')?.tone).toBe('review');
   });
 

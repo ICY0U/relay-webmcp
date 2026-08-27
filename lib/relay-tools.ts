@@ -40,14 +40,14 @@ function requirePreview(callbacks: RelayToolCallbacks, serviceId: string) {
 export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[] {
   return [
     {
-      name: 'relay_get_mission', title: 'Get RELAY mission',
-      description: 'Get the moving-home mission, service states, and whether human approval is required.',
+      name: 'relay_get_move_plan', title: 'Get RELAY move plan',
+      description: 'Get the moving-home plan, connected service states, and whether human approval is required.',
       inputSchema: emptySchema, annotations: readOnly,
       execute: () => getMissionSnapshot(callbacks.getState()),
     },
     {
       name: 'relay_get_permissions', title: 'Get delegation permissions',
-      description: 'Read the exact fields and changes this mission allows, blocks, or requires human approval for.',
+      description: 'Read the exact fields and changes this move plan allows, blocks, or requires human approval for.',
       inputSchema: emptySchema, annotations: readOnly,
       execute: () => ({ policyId: POLICY.id, expires: `${callbacks.getState().mission.moveDate}T23:59:00`, approvalThreshold: callbacks.getState().mission.approvalThreshold, allowed: POLICY.allowed, approvalRequired: POLICY.approvalRequired, forbidden: POLICY.forbidden }),
     },
@@ -72,7 +72,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       execute: (rawInput) => {
         const input = objectInput(rawInput);
         const mission = callbacks.getState().mission;
-        if (callbacks.getState().missionStatus === 'draft') return { status: 'denied', reason: 'mission_configuration_required' };
+        if (callbacks.getState().missionStatus === 'draft') return { status: 'denied', reason: 'move_plan_configuration_required' };
         if (input.newAddress !== mission.newAddress || input.moveDate !== mission.moveDate) return { status: 'invalid_input', expected: { newAddress: mission.newAddress, moveDate: mission.moveDate } };
         callbacks.onBeginService('civic');
         return { status: 'ready', provider: 'Civic', before: mission.currentAddress, after: mission.newAddress, fee: 0, policyDecision: 'allowed' };
@@ -126,12 +126,44 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
     },
 
     {
+      name: 'water_get_account', title: 'Get Clearflow water account',
+      description: 'Get the fictional Clearflow account, current address, and water plan.',
+      inputSchema: emptySchema, annotations: readOnly,
+      execute: () => ({ accountId: callbacks.getState().providers.clearflow.accountId, address: callbacks.getState().providers.clearflow.serviceAddress, plan: callbacks.getState().providers.clearflow.plan }),
+    },
+    {
+      name: 'water_preview_move', title: 'Preview Clearflow water move',
+      description: 'Preview opening fictional water service at the destination without changing the account.',
+      inputSchema: { type: 'object', properties: { moveDate: { type: 'string' }, postcode: { type: 'string' } }, required: ['moveDate', 'postcode'], additionalProperties: false },
+      annotations: readOnly,
+      execute: (rawInput) => {
+        if (serviceTone(callbacks, 'northstar') !== 'done') return { status: 'denied', reason: 'energy_step_required' };
+        const input = objectInput(rawInput);
+        const mission = callbacks.getState().mission;
+        if (input.moveDate !== mission.moveDate || input.postcode !== mission.postcode) return { status: 'invalid_input', expected: { moveDate: mission.moveDate, postcode: mission.postcode } };
+        callbacks.onBeginService('clearflow');
+        return { status: 'ready', plan: callbacks.getState().providers.clearflow.plan, destination: mission.newAddress, estimatedChange: 0, policyDecision: 'allowed' };
+      },
+    },
+    {
+      name: 'water_schedule_move', title: 'Schedule Clearflow water move',
+      description: 'Schedule the previewed fictional water move and create an action receipt.',
+      inputSchema: emptySchema,
+      execute: () => {
+        if (serviceTone(callbacks, 'clearflow') === 'done') return { status: 'completed', replayed: true, receiptId: 'RCT-WTR-0915' };
+        if (!requirePreview(callbacks, 'clearflow')) return { status: 'denied', reason: 'preview_required' };
+        callbacks.onCompleteService('clearflow');
+        return { status: 'completed', receiptId: 'RCT-WTR-0915', address: callbacks.getState().mission.newAddress };
+      },
+    },
+
+    {
       name: 'postal_preview_forwarding', title: 'Preview Postway forwarding',
       description: 'Preview fictional mail forwarding and start the Postway step visibly without committing it.',
       inputSchema: { type: 'object', properties: { months: { type: 'number', enum: [3, 6, 12] } }, required: ['months'], additionalProperties: false },
       annotations: readOnly,
       execute: (rawInput) => {
-        if (serviceTone(callbacks, 'northstar') !== 'done') return { status: 'denied', reason: 'energy_step_required' };
+        if (serviceTone(callbacks, 'clearflow') !== 'done') return { status: 'denied', reason: 'water_step_required' };
         const input = objectInput(rawInput);
         if (input.months !== callbacks.getState().mission.forwardingMonths) return { status: 'invalid_input', expectedMonths: callbacks.getState().mission.forwardingMonths };
         callbacks.onBeginService('postway');
@@ -147,6 +179,38 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
         if (!requirePreview(callbacks, 'postway')) return { status: 'denied', reason: 'preview_required' };
         callbacks.onCompleteService('postway');
         return { status: 'completed', receiptId: 'RCT-PST-0915', months: callbacks.getState().mission.forwardingMonths };
+      },
+    },
+
+    {
+      name: 'insurance_get_policy', title: 'Get Haven home policy',
+      description: 'Get the fictional Haven policy, insured address, cover, and monthly premium.',
+      inputSchema: emptySchema, annotations: readOnly,
+      execute: () => ({ accountId: callbacks.getState().providers.haven.accountId, address: callbacks.getState().providers.haven.insuredAddress, cover: callbacks.getState().providers.haven.cover, monthlyPremium: callbacks.getState().providers.haven.monthlyPremium }),
+    },
+    {
+      name: 'insurance_preview_address_change', title: 'Preview Haven address change',
+      description: 'Preview moving fictional home cover to the destination and confirm the premium effect.',
+      inputSchema: { type: 'object', properties: { newAddress: { type: 'string' }, moveDate: { type: 'string' } }, required: ['newAddress', 'moveDate'], additionalProperties: false },
+      annotations: readOnly,
+      execute: (rawInput) => {
+        if (serviceTone(callbacks, 'postway') !== 'done') return { status: 'denied', reason: 'postal_step_required' };
+        const input = objectInput(rawInput);
+        const mission = callbacks.getState().mission;
+        if (input.newAddress !== mission.newAddress || input.moveDate !== mission.moveDate) return { status: 'invalid_input', expected: { newAddress: mission.newAddress, moveDate: mission.moveDate } };
+        callbacks.onBeginService('haven');
+        return { status: 'ready', cover: callbacks.getState().providers.haven.cover, currentPremium: 28, proposedPremium: 28, policyDecision: 'allowed_no_price_change' };
+      },
+    },
+    {
+      name: 'insurance_commit_address_change', title: 'Commit Haven address change',
+      description: 'Commit the previewed fictional insured-address change and create an action receipt.',
+      inputSchema: emptySchema,
+      execute: () => {
+        if (serviceTone(callbacks, 'haven') === 'done') return { status: 'completed', replayed: true, receiptId: 'RCT-HVN-0915' };
+        if (!requirePreview(callbacks, 'haven')) return { status: 'denied', reason: 'preview_required' };
+        callbacks.onCompleteService('haven');
+        return { status: 'completed', receiptId: 'RCT-HVN-0915', monthlyPremium: callbacks.getState().providers.haven.monthlyPremium };
       },
     },
 
@@ -174,7 +238,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       inputSchema: { type: 'object', properties: { moveDate: { type: 'string', description: 'Move date in YYYY-MM-DD format.' }, postcode: { type: 'string', description: 'Destination postcode.' } }, required: ['moveDate', 'postcode'], additionalProperties: false },
       annotations: readOnly,
       execute: (rawInput) => {
-        if (serviceTone(callbacks, 'postway') !== 'done') return { status: 'denied', reason: 'allowed_service_steps_incomplete' };
+        if (serviceTone(callbacks, 'haven') !== 'done') return { status: 'denied', reason: 'allowed_service_steps_incomplete' };
         const input = objectInput(rawInput);
         const mission = callbacks.getState().mission;
         if (input.moveDate !== mission.moveDate || input.postcode !== mission.postcode) return { status: 'invalid_input', expected: { moveDate: mission.moveDate, postcode: mission.postcode } };
@@ -192,7 +256,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       execute: (rawInput) => {
         const input = objectInput(rawInput);
         if (input.proposalId !== 'PROP-WAV-300') return { status: 'not_found', proposalId: input.proposalId };
-        if (callbacks.getState().missionStatus !== 'waiting_for_human_approval') return { status: 'denied', reason: 'mission_not_at_approval_gate', proposalId: 'PROP-WAV-300' };
+        if (callbacks.getState().missionStatus !== 'waiting_for_human_approval') return { status: 'denied', reason: 'move_plan_not_at_approval_gate', proposalId: 'PROP-WAV-300' };
         callbacks.onApprovalRequested();
         return { status: 'waiting_for_human', proposalId: 'PROP-WAV-300', message: 'The visible approval gate is open. The human must decide.' };
       },
@@ -216,9 +280,9 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       inputSchema: emptySchema,
       annotations: { idempotentHint: true },
       execute: async () => {
-        if (callbacks.getState().missionStatus !== 'ready') return { status: 'not_ready', mission: getMissionSnapshot(callbacks.getState()) };
+        if (callbacks.getState().missionStatus !== 'ready') return { status: 'not_ready', plan: getMissionSnapshot(callbacks.getState()) };
         await callbacks.onRunMission();
-        return { status: 'waiting_for_human_approval', mission: getMissionSnapshot(callbacks.getState()), receiptsCreated: callbacks.getState().receipts.length };
+        return { status: 'waiting_for_human_approval', plan: getMissionSnapshot(callbacks.getState()), receiptsCreated: callbacks.getState().receipts.length };
       },
     },
     {

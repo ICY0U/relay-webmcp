@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleAlert,
+  Droplets,
   ExternalLink,
   FileCheck2,
   Home,
@@ -27,6 +28,7 @@ import {
   Play,
   ShieldCheck,
   Sparkles,
+  Umbrella,
   Wifi,
   X,
   Zap,
@@ -38,14 +40,14 @@ import { useWebMCP } from '@/lib/use-webmcp';
 type Drawer = 'permissions' | 'receipts' | 'activity' | 'service' | null;
 
 const navItems = [
-  { id: null, label: 'Mission', icon: Home },
+  { id: null, label: 'Move plan', icon: Home },
   { id: 'activity' as const, label: 'Activity', icon: ActivityIcon },
   { id: 'permissions' as const, label: 'Permissions', icon: ShieldCheck },
   { id: 'receipts' as const, label: 'Receipts', icon: ReceiptText },
 ];
 
 function ServiceGlyph({ id }: { id: string }) {
-  const Icon = id === 'civic' ? Home : id === 'northstar' ? Zap : id === 'postway' ? Mail : id === 'wavelength' ? Wifi : BriefcaseBusiness;
+  const Icon = id === 'civic' ? Home : id === 'northstar' ? Zap : id === 'clearflow' ? Droplets : id === 'postway' ? Mail : id === 'haven' ? Umbrella : id === 'wavelength' ? Wifi : BriefcaseBusiness;
   return <Icon size={18} strokeWidth={2} />;
 }
 
@@ -86,13 +88,13 @@ export default function RelayApp() {
     setRunMode('contained');
     setState((current) => startMission(current));
     await wait(450);
-    for (const serviceId of ['civic', 'northstar', 'postway']) {
+    for (const serviceId of ['civic', 'northstar', 'clearflow', 'postway', 'haven']) {
       if (token !== runToken.current) return;
       setState((current) => beginService(current, serviceId));
-      await wait(720);
+      await wait(520);
       if (token !== runToken.current) return;
       setState((current) => completeService(current, serviceId));
-      await wait(360);
+      await wait(240);
     }
     if (token !== runToken.current) return;
     setState((current) => beginService(current, 'wavelength'));
@@ -118,7 +120,7 @@ export default function RelayApp() {
     }
     window.setTimeout(() => {
       setState((current) => approveInternetTransfer(current));
-      setToast('Mission complete — 4 verified receipts created');
+      setToast('Move complete — 6 verified receipts created');
       window.setTimeout(() => setToast(null), 3400);
     }, 850);
   };
@@ -153,7 +155,7 @@ export default function RelayApp() {
     setApprovalOpen(false);
     clearRelayState();
     setState(INITIAL_STATE);
-    setToast('Demo reset — ready to create a fresh mission');
+    setToast('Demo reset — ready to create a fresh move plan');
     window.setTimeout(() => setToast(null), 2400);
   };
 
@@ -193,7 +195,7 @@ export default function RelayApp() {
 
         <button className="user-menu" aria-label="David Adams profile">
           <span className="user-avatar">DA</span>
-          <span><strong>David Adams</strong><small>Mission owner</small></span>
+          <span><strong>David Adams</strong><small>Plan owner</small></span>
           <MoreHorizontal size={17} />
         </button>
       </aside>
@@ -201,15 +203,15 @@ export default function RelayApp() {
       <section className="app-workspace">
         <header className="app-topbar">
           <div className="title-group">
-            <span className="breadcrumb">Missions <ChevronRight size={13} /> Moving home</span>
-            <h1>Moving home</h1>
+            <span className="breadcrumb">Plans <ChevronRight size={13} /> Home move</span>
+            <h1>Your move</h1>
           </div>
           <div className="topbar-tools">
             <span className={`mcp-chip ${webmcp.supported ? 'live' : ''}`} title={webmcp.supported ? `${webmcp.registeredCount} tools registered` : 'Human demo mode remains fully available'}>
               <RadioTower size={14} />
               <span>{webmcp.supported ? `${webmcp.registeredCount} tools live` : 'Demo mode'}</span>
             </span>
-            <button className="icon-button" onClick={() => setDrawer('permissions')} aria-label="Mission settings"><MoreHorizontal size={19} /></button>
+            <button className="icon-button" onClick={() => setDrawer('permissions')} aria-label="Move plan settings"><MoreHorizontal size={19} /></button>
           </div>
         </header>
 
@@ -218,14 +220,14 @@ export default function RelayApp() {
             <section className={`mission-hero ${isComplete ? 'complete' : ''}`}>
               <div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" />
               <div className="hero-heading-row">
-                <span className="live-status"><i /> {isComplete ? 'Completed within your rules' : isDraft ? 'New secure mission' : isReady ? 'Ready for secure delegation' : isRunning || isCommitting ? 'Agent executing live' : 'Agent paused safely'}</span>
-                <span className="mission-id">MISSION-MOVE-0915</span>
+                <span className="live-status"><i /> {isComplete ? 'Completed within your rules' : isDraft ? 'New move plan' : isReady ? 'Ready to coordinate' : isRunning || isCommitting ? 'RELAY working live' : 'Paused for your approval'}</span>
+                <span className="mission-id">PLAN-MOVE-0915</span>
               </div>
               <h2>{isComplete ? 'Your move is coordinated.' : isDraft ? 'Plan the move. Set the boundaries.' : isReady ? 'Your secure plan is ready.' : isRunning || isCommitting ? 'Coordinating your move now.' : 'One decision needs you.'}</h2>
-              <p className="hero-subtitle">{isComplete ? 'Every permitted action is complete. Protected details were left untouched.' : isDraft ? 'Enter the real mission details once. RELAY will turn them into an auditable cross-service plan.' : isReady ? 'Your instruction is configured across five services and protected by one delegation policy.' : isRunning || isCommitting ? 'RELAY is calling structured service tools and recording every result.' : 'Three services are complete. RELAY stopped before changing your monthly cost.'}</p>
+              <p className="hero-subtitle">{isComplete ? 'Every approved service change is complete. Protected details were left untouched.' : isDraft ? 'Tell RELAY where and when. It will prepare every service and show the boundaries before anything changes.' : isReady ? 'Your details are mapped across six connected services and protected by one approval policy.' : isRunning || isCommitting ? 'RELAY is calling structured service tools and recording every result.' : 'Five services are complete. RELAY stopped before changing your monthly cost.'}</p>
               <button className="intent-surface" onClick={() => setDrawer('permissions')}>
                 <Sparkles size={17} />
-                <span><small>{isDraft ? 'Mission template' : 'Your instruction'}</small>“Move me from {state.mission.currentAddress} to {state.mission.newAddress} on {formatDate(state.mission.moveDate)}. Don’t touch employer details or marketing preferences.”</span>
+                <span><small>{isDraft ? 'Move summary' : 'Your instruction'}</small>“Move my home services from {state.mission.currentAddress} to {state.mission.newAddress} on {formatDate(state.mission.moveDate)}. Keep employer details and marketing preferences unchanged.”</span>
                 <ChevronRight size={18} />
               </button>
               <div className="hero-progress-row">
@@ -237,7 +239,7 @@ export default function RelayApp() {
 
             <section className="execution-card">
               <header className="section-header">
-                <div><span className="section-kicker"><Network size={13} /> Live execution</span><h2>Service plan</h2><p>RELAY previews every change, checks your rules, then acts.</p></div>
+                <div><span className="section-kicker"><Network size={13} /> Live coordination</span><h2>Connected services</h2><p>RELAY previews every change, checks your rules, then acts.</p></div>
                 <span className="trace-badge"><i /> Synced just now</span>
               </header>
               <div className="execution-list" data-testid="service-list">
@@ -261,21 +263,21 @@ export default function RelayApp() {
             {isDraft ? (
               <MissionComposer mission={state.mission} onSave={(mission) => {
                 setState((current) => configureMission(current, mission));
-                setToast('Secure execution plan created');
+                setToast('Your move plan is ready');
                 window.setTimeout(() => setToast(null), 2600);
               }} />
             ) : isReady ? (
               <section className="approval-card launch-card" data-testid="launch-card">
                 <div className="attention-icon launch-icon"><Bot size={22} /></div>
                 <span className="approval-eyebrow">Built-in RELAY agent</span>
-                <h2>Run the mission here</h2>
-                <p>RELAY will inspect your permissions, coordinate each service, stop for your decision, and finish with verified receipts—all on this screen.</p>
+                <h2>Start your move plan</h2>
+                <p>RELAY will check your approval rules, coordinate every service, stop for your decision, and finish with verified receipts—all on this screen.</p>
                 <div className="run-summary">
-                  <span><Network size={16} /><strong>4 service connections</strong></span>
+                  <span><Network size={16} /><strong>6 connected services</strong></span>
                   <span><ShieldCheck size={16} /><strong>1 protected human decision</strong></span>
                   <span><ReceiptText size={16} /><strong>Live action receipts</strong></span>
                 </div>
-                <button className="primary-action" onClick={() => void runMission()}>Start secure mission <Play size={15} fill="currentColor" /></button>
+                <button className="primary-action" onClick={() => void runMission()}>Start move plan <Play size={15} fill="currentColor" /></button>
                 <span className="no-action-note"><RadioTower size={12} /> {webmcp.supported ? `${webmcp.registeredCount} WebMCP tools also available` : 'Everything needed is built into RELAY'}</span>
               </section>
             ) : isRunning || isCommitting ? (
@@ -302,29 +304,29 @@ export default function RelayApp() {
                 <PriceChange />
                 <div className="boundary-message"><ShieldCheck size={18} /><span><strong>RELAY stopped here automatically</strong>Your rules require approval for any recurring price increase.</span></div>
                 <button className="primary-action" onClick={requestApproval}>Review this decision <ArrowRight size={17} /></button>
-                <button className="quiet-action" onClick={() => openService(state.services[3])}>Compare provider options</button>
+                <button className="quiet-action" onClick={() => { const service = state.services.find((item) => item.id === 'wavelength'); if (service) openService(service); }}>Compare provider options</button>
                 <span className="no-action-note"><LockKeyhole size={12} /> Nothing changes until you approve</span>
               </section>
             ) : (
               <section className="approval-card completion-card" data-testid="completion-card">
                 <div className="completion-mark"><BadgeCheck size={31} /></div>
-                <span className="approval-eyebrow">Mission complete</span>
+                <span className="approval-eyebrow">Move complete</span>
                 <h2>Everything allowed is done</h2>
-                <p>Four services were updated. Employer details and marketing preferences stayed protected.</p>
+                <p>Six services were updated. Employer details and marketing preferences stayed protected.</p>
                 <div className="latest-receipt"><FileCheck2 size={20} /><span><small>Latest action receipt</small><strong>{state.receipts.at(-1)?.receiptId}</strong><em>{state.receipts.at(-1)?.approvedBy === 'delegation-policy' ? 'Completed within policy' : 'Human approved'} · Wavelength</em></span></div>
                 <button className="primary-action" onClick={() => setDrawer('receipts')}>Review action receipts <ArrowRight size={17} /></button>
-                <button className="quiet-action" onClick={resetMission}><RefreshCw size={14} /> Reset demo mission</button>
+                <button className="quiet-action" onClick={resetMission}><RefreshCw size={14} /> Start a new move</button>
               </section>
             )}
 
-            <section className="guardrail-card">
-              <header><ShieldCheck size={18} /><span><strong>Your guardrails are active</strong><small>{POLICY.id}</small></span></header>
-              <ul>
-                <li><Check size={14} /><span>Address and move date allowed</span></li>
-                <li><CircleAlert size={14} /><span>Price increases above £{state.mission.approvalThreshold}/mo need approval</span></li>
-                <li><Ban size={14} /><span>Employer and marketing blocked</span></li>
-              </ul>
-              <button onClick={() => setDrawer('permissions')}>See all permissions <ChevronRight size={15} /></button>
+            <section className="guardrail-card guardrail-card-v2">
+              <header><ShieldCheck size={19} /><span><strong>Your approval rules</strong><small>Applies only to this move · expires {shortDate(state.mission.moveDate)}</small></span><em>Active</em></header>
+              <div className="guardrail-rules">
+                <div className="rule-row allow"><span><Check size={13} /></span><div><small>RELAY CAN</small><strong>Update address-based services</strong><p>Six connected providers</p></div></div>
+                <div className="rule-row review"><span><CircleAlert size={13} /></span><div><small>ASK ME FIRST</small><strong>{state.mission.approvalThreshold === 0 ? 'Any monthly price increase' : `More than £${state.mission.approvalThreshold}/month`}</strong><p>Contracts and recurring costs</p></div></div>
+                <div className="rule-row deny"><span><Ban size={13} /></span><div><small>NEVER TOUCH</small><strong>Employer and marketing data</strong><p>Blocked before provider access</p></div></div>
+              </div>
+              <button onClick={() => setDrawer('permissions')}>Review approval settings <ChevronRight size={15} /></button>
             </section>
           </aside>
         </div>
@@ -392,9 +394,9 @@ function MissionComposer({ mission, onSave }: { mission: MissionConfig; onSave: 
 
   return <section className="approval-card mission-composer" data-testid="mission-composer">
     <div className="attention-icon launch-icon"><Sparkles size={21} /></div>
-    <span className="approval-eyebrow">Create your mission</span>
-    <h2>Where are you moving?</h2>
-    <p>These fictional details become the live inputs used by every provider action and receipt.</p>
+    <span className="approval-eyebrow">Move setup</span>
+    <h2>Plan your address change</h2>
+    <p>Tell RELAY where and when. It will prepare each service, show what can change, and ask before anything sensitive.</p>
     <form onSubmit={submit}>
       <label><span>Current address</span><input required value={draft.currentAddress} onChange={(event) => update('currentAddress', event.target.value)} /></label>
       <label><span>New address</span><input required value={draft.newAddress} onChange={(event) => update('newAddress', event.target.value)} /></label>
@@ -407,7 +409,7 @@ function MissionComposer({ mission, onSave }: { mission: MissionConfig; onSave: 
         <label><span>Auto-approve increase</span><select value={draft.approvalThreshold} onChange={(event) => update('approvalThreshold', Number(event.target.value))}><option value={0}>Never</option><option value={5}>Up to £5/mo</option><option value={10}>Up to £10/mo</option></select></label>
       </div>
       <div className="composer-guardrail"><ShieldCheck size={16} /><span><strong>Protected by default</strong>Employer records and marketing preferences will remain blocked.</span></div>
-      <button className="primary-action" type="submit">Build secure plan <ArrowRight size={16} /></button>
+      <button className="primary-action" type="submit">Review move plan <ArrowRight size={16} /></button>
     </form>
     <span className="no-action-note"><LockKeyhole size={12} /> Demo information stays in this browser</span>
   </section>;
@@ -415,6 +417,10 @@ function MissionComposer({ mission, onSave }: { mission: MissionConfig; onSave: 
 
 function formatDate(value: string) {
   return new Date(`${value}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+function shortDate(value: string) {
+  return new Date(`${value}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
 function PriceChange({ expanded = false }: { expanded?: boolean }) {
@@ -444,7 +450,7 @@ function PolicyGroup({ tone, title, items }: { tone: string; title: string; item
 
 function ReceiptsPanel({ state }: { state: RelayState }) {
   return <><PanelHeading kicker="Append-only audit" title={`${state.receipts.length} action receipts`} body="Every external change has a compact, inspectable record." />
-    {state.receipts.length === 0 ? <div className="empty-panel"><ReceiptText size={25} /><strong>No actions yet</strong><p>Run the mission and verified receipts will appear here in real time.</p></div> : <div className="receipt-list">{[...state.receipts].reverse().map((receipt) => <article className="receipt" key={receipt.receiptId}><div className="receipt-top"><span className="receipt-check"><Check size={12} /></span><span>{receipt.service}</span><code>{receipt.receiptId}</code></div><h3>{receipt.action}</h3><div className="receipt-change"><span>{receipt.before}</span><ArrowRight size={13} /><span>{receipt.after}</span></div><footer><span>{receipt.approvedBy}</span><time>{new Date(receipt.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time></footer></article>)}</div>}
+    {state.receipts.length === 0 ? <div className="empty-panel"><ReceiptText size={25} /><strong>No actions yet</strong><p>Start the move plan and verified receipts will appear here in real time.</p></div> : <div className="receipt-list">{[...state.receipts].reverse().map((receipt) => <article className="receipt" key={receipt.receiptId}><div className="receipt-top"><span className="receipt-check"><Check size={12} /></span><span>{receipt.service}</span><code>{receipt.receiptId}</code></div><h3>{receipt.action}</h3><div className="receipt-change"><span>{receipt.before}</span><ArrowRight size={13} /><span>{receipt.after}</span></div><footer><span>{receipt.approvedBy}</span><time>{new Date(receipt.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time></footer></article>)}</div>}
   </>;
 }
 
@@ -461,13 +467,17 @@ function ServicePanel({ service, state }: { service: RelayService; state: RelayS
     ? [['Registered address', state.providers.civic.registeredAddress], ['Last updated', state.providers.civic.lastUpdated ? new Date(state.providers.civic.lastUpdated).toLocaleTimeString('en-GB') : 'Not changed']]
     : service.id === 'northstar'
       ? [['Service address', state.providers.northstar.serviceAddress], ['Scheduled move', state.providers.northstar.moveDate ? formatDate(state.providers.northstar.moveDate) : 'Not scheduled']]
-      : service.id === 'postway'
-        ? [['Forwarding to', state.providers.postway.forwardingAddress ?? 'Not active'], ['Duration', state.providers.postway.forwardingMonths ? `${state.providers.postway.forwardingMonths} months` : '—']]
-        : service.id === 'wavelength'
-          ? [['Current plan', `${state.providers.wavelength.plan} · £${state.providers.wavelength.monthlyCost}/mo`], ['Service address', state.providers.wavelength.serviceAddress]]
-          : [['Employer address', state.providers.hearth.employerAddress], ['Marketing', state.providers.hearth.marketingPreferences]];
+      : service.id === 'clearflow'
+        ? [['Service address', state.providers.clearflow.serviceAddress], ['Scheduled move', state.providers.clearflow.moveDate ? formatDate(state.providers.clearflow.moveDate) : 'Not scheduled']]
+        : service.id === 'postway'
+          ? [['Forwarding to', state.providers.postway.forwardingAddress ?? 'Not active'], ['Duration', state.providers.postway.forwardingMonths ? `${state.providers.postway.forwardingMonths} months` : '—']]
+          : service.id === 'haven'
+            ? [['Insured address', state.providers.haven.insuredAddress], ['Cover', `${state.providers.haven.cover} · £${state.providers.haven.monthlyPremium}/mo`]]
+            : service.id === 'wavelength'
+              ? [['Current plan', `${state.providers.wavelength.plan} · £${state.providers.wavelength.monthlyCost}/mo`], ['Service address', state.providers.wavelength.serviceAddress]]
+              : [['Employer address', state.providers.hearth.employerAddress], ['Marketing', state.providers.hearth.marketingPreferences]];
   return <><PanelHeading kicker="Fictional service" title={service.name} body={service.summary} />
-    <div className="provider-preview"><div className="provider-hero"><span className={`provider-big provider-${service.id}`}><ServiceGlyph id={service.id} /></span><div><strong>{service.name}</strong><p>{service.detail}</p></div></div><div className="mock-account"><span>Account number</span><strong>{provider.accountId}</strong>{accountRows.map(([label, value]) => <span className="account-pair" key={label}><small>{label}</small><b>{value}</b></span>)}</div><a href={`/providers/${service.id}`} target="_blank" rel="noreferrer">Open persistent service account <ExternalLink size={14} /></a></div>
+    <div className="provider-preview"><div className="provider-hero"><span className={`provider-big provider-${service.id}`}><ServiceGlyph id={service.id} /></span><div><strong>{service.name}</strong><p>{service.detail}</p></div></div><div className="mock-account"><span>Account number</span><strong>{provider.accountId}</strong>{accountRows.map(([label, value]) => <span className="account-pair" key={label}><small>{label}</small><b>{value}</b></span>)}</div>{service.tone === 'blocked' ? <span className="provider-access-blocked"><LockKeyhole size={14} /> Provider access blocked by your rules</span> : <a href={`/providers/${service.id}`} target="_blank" rel="noreferrer">Open persistent service account <ExternalLink size={14} /></a>}</div>
     <section className="tool-list"><p className="section-kicker">RELAY tools for this service</p>{service.tools.length ? service.tools.map((tool) => <code key={tool}>{tool}</code>) : <p className="no-tools">No tools loaded — RELAY blocked this service before discovery.</p>}</section>
   </>;
 }

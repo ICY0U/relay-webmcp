@@ -23,7 +23,9 @@ export type MissionConfig = {
 export type ProviderAccounts = {
   civic: { accountId: string; registeredAddress: string; lastUpdated: string | null };
   northstar: { accountId: string; serviceAddress: string; moveDate: string | null; tariff: string };
+  clearflow: { accountId: string; serviceAddress: string; moveDate: string | null; plan: string };
   postway: { accountId: string; forwardingAddress: string | null; forwardingMonths: number };
+  haven: { accountId: string; insuredAddress: string; cover: string; monthlyPremium: number; moveDate: string | null };
   wavelength: { accountId: string; serviceAddress: string; plan: string; monthlyCost: number; moveDate: string | null };
   hearth: { accountId: string; employerAddress: string; marketingPreferences: string };
 };
@@ -79,7 +81,9 @@ export const DEFAULT_MISSION: MissionConfig = {
 export const INITIAL_PROVIDERS: ProviderAccounts = {
   civic: { accountId: 'CT-1842-77', registeredAddress: DEFAULT_MISSION.currentAddress, lastUpdated: null },
   northstar: { accountId: 'NS-9401-38', serviceAddress: DEFAULT_MISSION.currentAddress, moveDate: null, tariff: 'Northstar Flex' },
+  clearflow: { accountId: 'CF-2208-64', serviceAddress: DEFAULT_MISSION.currentAddress, moveDate: null, plan: 'Metered Home' },
   postway: { accountId: 'PW-3150-82', forwardingAddress: null, forwardingMonths: 0 },
+  haven: { accountId: 'HV-8042-19', insuredAddress: DEFAULT_MISSION.currentAddress, cover: 'Home Essentials', monthlyPremium: 28, moveDate: null },
   wavelength: { accountId: 'WV-7719-04', serviceAddress: DEFAULT_MISSION.currentAddress, plan: 'Standard 100', monthlyCost: 36, moveDate: null },
   hearth: { accountId: 'HR-0018-55', employerAddress: DEFAULT_MISSION.currentAddress, marketingPreferences: 'Essential only' },
 };
@@ -88,7 +92,9 @@ function createServices(mission: MissionConfig): RelayService[] {
   return [
     { id: 'civic', icon: 'C', name: 'Civic', detail: 'Council address', status: 'Ready', tone: 'queued', summary: `Ready to update your council address from ${mission.currentAddress} to ${mission.newAddress}.`, tools: ['council_get_account', 'council_preview_move', 'council_commit_move'] },
     { id: 'northstar', icon: 'E', name: 'Northstar', detail: 'Energy transfer', status: 'Ready', tone: 'queued', summary: `Ready to schedule your energy service move for ${formatMoveDate(mission.moveDate)}.`, tools: ['energy_check_area', 'energy_preview_move', 'energy_schedule_move'] },
+    { id: 'clearflow', icon: 'W', name: 'Clearflow', detail: 'Water account', status: 'Ready', tone: 'queued', summary: `Ready to close the water account at ${mission.currentAddress} and open service at ${mission.newAddress}.`, tools: ['water_get_account', 'water_preview_move', 'water_schedule_move'] },
     { id: 'postway', icon: 'P', name: 'Postway', detail: 'Mail forwarding', status: 'Ready', tone: 'queued', summary: `Ready to arrange ${mission.forwardingMonths} months of mail forwarding.`, tools: ['postal_preview_forwarding', 'postal_schedule_forwarding'] },
+    { id: 'haven', icon: 'H', name: 'Haven', detail: 'Home insurance', status: 'Ready', tone: 'queued', summary: `Ready to update the insured address without changing your £28 monthly premium.`, tools: ['insurance_get_policy', 'insurance_preview_address_change', 'insurance_commit_address_change'] },
     { id: 'wavelength', icon: 'W', name: 'Wavelength', detail: 'Internet plan', status: 'Ready', tone: 'queued', summary: 'Ready to check available broadband plans at your new address.', tools: ['internet_preview_transfer', 'internet_commit_transfer'] },
     { id: 'hearth', icon: 'H', name: 'Hearth', detail: 'Employer records', status: 'Blocked by rule', tone: 'blocked', summary: 'Skipped because your delegation forbids employer changes.', tools: [] },
   ];
@@ -119,7 +125,9 @@ export function configureMission(state: RelayState, mission: MissionConfig, now 
   const providers: ProviderAccounts = {
     civic: { ...INITIAL_PROVIDERS.civic, registeredAddress: mission.currentAddress },
     northstar: { ...INITIAL_PROVIDERS.northstar, serviceAddress: mission.currentAddress },
+    clearflow: { ...INITIAL_PROVIDERS.clearflow, serviceAddress: mission.currentAddress },
     postway: { ...INITIAL_PROVIDERS.postway },
+    haven: { ...INITIAL_PROVIDERS.haven, insuredAddress: mission.currentAddress },
     wavelength: { ...INITIAL_PROVIDERS.wavelength, serviceAddress: mission.currentAddress },
     hearth: { ...INITIAL_PROVIDERS.hearth, employerAddress: mission.currentAddress },
   };
@@ -130,7 +138,7 @@ export function configureMission(state: RelayState, mission: MissionConfig, now 
     providers,
     services: createServices(mission),
     receipts: [],
-    activity: [activity('mission-configured', `Mission configured for ${mission.newAddress}`, 'Policy check', now)],
+    activity: [activity('plan-configured', `Move plan configured for ${mission.newAddress}`, 'Policy check', now)],
   };
 }
 
@@ -161,7 +169,9 @@ export function completeService(state: RelayState, serviceId: string, now = new 
   const outcomes: Record<string, Omit<Receipt, 'timestamp'>> = {
     civic: { receiptId: 'RCT-CIV-0915', service: 'Civic', action: 'Address updated', status: 'completed', approvedBy: 'delegation-policy', policyId: POLICY.id, before: mission.currentAddress, after: mission.newAddress, reversibleUntil: '2026-09-14T23:59:00.000Z' },
     northstar: { receiptId: 'RCT-ENE-0915', service: 'Northstar', action: 'Energy move scheduled', status: 'completed', approvedBy: 'delegation-policy', policyId: POLICY.id, before: mission.currentAddress, after: `${mission.newAddress} · ${formatMoveDate(mission.moveDate)}`, reversibleUntil: '2026-09-12T23:59:00.000Z' },
+    clearflow: { receiptId: 'RCT-WTR-0915', service: 'Clearflow', action: 'Water move scheduled', status: 'completed', approvedBy: 'delegation-policy', policyId: POLICY.id, before: mission.currentAddress, after: `${mission.newAddress} · ${formatMoveDate(mission.moveDate)}`, reversibleUntil: '2026-09-13T23:59:00.000Z' },
     postway: { receiptId: 'RCT-PST-0915', service: 'Postway', action: 'Mail forwarding scheduled', status: 'completed', approvedBy: 'delegation-policy', policyId: POLICY.id, before: 'No forwarding', after: `${mission.forwardingMonths} months · ${mission.newAddress}`, reversibleUntil: '2026-09-14T23:59:00.000Z' },
+    haven: { receiptId: 'RCT-HVN-0915', service: 'Haven', action: 'Insured address updated', status: 'completed', approvedBy: 'delegation-policy', policyId: POLICY.id, before: mission.currentAddress, after: `${mission.newAddress} · £28/mo unchanged`, reversibleUntil: '2026-09-14T23:59:00.000Z' },
   };
   const outcome = outcomes[serviceId];
   if (!outcome) return state;
@@ -170,12 +180,16 @@ export function completeService(state: RelayState, serviceId: string, now = new 
     ...state.providers,
     ...(serviceId === 'civic' ? { civic: { ...state.providers.civic, registeredAddress: mission.newAddress, lastUpdated: now.toISOString() } } : {}),
     ...(serviceId === 'northstar' ? { northstar: { ...state.providers.northstar, serviceAddress: mission.newAddress, moveDate: mission.moveDate } } : {}),
+    ...(serviceId === 'clearflow' ? { clearflow: { ...state.providers.clearflow, serviceAddress: mission.newAddress, moveDate: mission.moveDate } } : {}),
     ...(serviceId === 'postway' ? { postway: { ...state.providers.postway, forwardingAddress: mission.newAddress, forwardingMonths: mission.forwardingMonths } } : {}),
+    ...(serviceId === 'haven' ? { haven: { ...state.providers.haven, insuredAddress: mission.newAddress, moveDate: mission.moveDate } } : {}),
   };
   const summaries: Record<string, string> = {
     civic: `Address updated from ${mission.currentAddress} to ${mission.newAddress}.`,
     northstar: `Energy service scheduled to move on ${formatMoveDate(mission.moveDate)}.`,
+    clearflow: `Water service scheduled to move on ${formatMoveDate(mission.moveDate)}.`,
     postway: `Mail forwarding scheduled for ${mission.forwardingMonths} months.`,
+    haven: `Home cover moved to ${mission.newAddress} with no premium change.`,
   };
   return {
     ...state,
@@ -245,13 +259,13 @@ export function getMissionSnapshot(state: RelayState) {
   const allowedServices = state.services.filter((service) => service.tone !== 'blocked');
   const completed = allowedServices.filter((service) => service.tone === 'done').length;
   return {
-    missionId: 'MISSION-MOVE-0915',
+    planId: 'PLAN-MOVE-0915',
     intent: `Move home from ${state.mission.currentAddress} to ${state.mission.newAddress} on ${state.mission.moveDate} without changing employer details or marketing preferences.`,
     status: state.missionStatus,
     completed,
     totalAllowed: allowedServices.length,
     approvalStatus: state.approvalStatus,
-    mission: state.mission,
+    moveDetails: state.mission,
     services: state.services.map(({ id, name, status }) => ({ id, name, status })),
   };
 }

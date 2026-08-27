@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { approveInternetTransfer, beginService, completeService, requestInternetApproval, startMission, type RelayState } from '@/lib/relay';
+import { approveInternetTransfer, beginService, completeService, INITIAL_STATE, requestInternetApproval, startMission, type RelayState } from '@/lib/relay';
 import { loadRelayState, mutateRelayState, RELAY_STORAGE_KEY } from '@/lib/relay-storage';
 
 type ProviderConfig = { id: string; name: string; category: string; accent: string; account: string; headline: string };
@@ -41,6 +41,20 @@ const toolSets: Record<string, ProviderTool[]> = {
       return { status: 'completed', receiptId: 'RCT-ENE-0915', date: state.providers.northstar.moveDate };
     } },
   ],
+  clearflow: [
+    { name: 'water_get_account', description: 'Get the fictional Clearflow water account and current service address.', readOnly: true, execute: () => {
+      const state = loadRelayState();
+      return { accountId: state.providers.clearflow.accountId, address: state.providers.clearflow.serviceAddress, plan: state.providers.clearflow.plan };
+    } },
+    { name: 'water_preview_move', description: 'Preview opening fictional water service at the destination.', readOnly: true, execute: () => {
+      const state = startProvider('clearflow');
+      return { status: 'ready', plan: state.providers.clearflow.plan, destination: state.mission.newAddress, estimatedChange: 0 };
+    } },
+    { name: 'water_schedule_move', description: 'Schedule the previewed fictional water service move.', execute: () => {
+      const state = mutateRelayState((current) => completeService(current, 'clearflow'));
+      return { status: 'completed', receiptId: 'RCT-WTR-0915', address: state.providers.clearflow.serviceAddress };
+    } },
+  ],
   postway: [
     { name: 'postal_preview_forwarding', description: 'Preview fictional mail forwarding duration, fee, and destination.', readOnly: true, execute: () => {
       const state = startProvider('postway');
@@ -49,6 +63,20 @@ const toolSets: Record<string, ProviderTool[]> = {
     { name: 'postal_schedule_forwarding', description: 'Schedule the previewed fictional mail forwarding request.', execute: () => {
       const state = mutateRelayState((current) => completeService(current, 'postway'));
       return { status: 'completed', receiptId: 'RCT-PST-0915', months: state.providers.postway.forwardingMonths };
+    } },
+  ],
+  haven: [
+    { name: 'insurance_get_policy', description: 'Get the fictional Haven policy, insured address, and monthly premium.', readOnly: true, execute: () => {
+      const state = loadRelayState();
+      return { accountId: state.providers.haven.accountId, address: state.providers.haven.insuredAddress, cover: state.providers.haven.cover, monthlyPremium: state.providers.haven.monthlyPremium };
+    } },
+    { name: 'insurance_preview_address_change', description: 'Preview moving fictional home cover without changing the premium.', readOnly: true, execute: () => {
+      const state = startProvider('haven');
+      return { status: 'ready', destination: state.mission.newAddress, currentPremium: 28, proposedPremium: 28 };
+    } },
+    { name: 'insurance_commit_address_change', description: 'Commit the previewed fictional insured-address change.', execute: () => {
+      const state = mutateRelayState((current) => completeService(current, 'haven'));
+      return { status: 'completed', receiptId: 'RCT-HVN-0915', address: state.providers.haven.insuredAddress };
     } },
   ],
   wavelength: [
@@ -78,22 +106,26 @@ const toolSets: Record<string, ProviderTool[]> = {
 function providerRows(config: ProviderConfig, state: RelayState) {
   if (config.id === 'civic') return [['Registered address', state.providers.civic.registeredAddress], ['Last updated', state.providers.civic.lastUpdated ? new Date(state.providers.civic.lastUpdated).toLocaleTimeString('en-GB') : 'Not changed']];
   if (config.id === 'northstar') return [['Service address', state.providers.northstar.serviceAddress], ['Move status', state.providers.northstar.moveDate ? `Scheduled · ${state.providers.northstar.moveDate}` : 'Not scheduled']];
+  if (config.id === 'clearflow') return [['Service address', state.providers.clearflow.serviceAddress], ['Move status', state.providers.clearflow.moveDate ? `Scheduled · ${state.providers.clearflow.moveDate}` : 'Not scheduled']];
   if (config.id === 'postway') return [['Forwarding address', state.providers.postway.forwardingAddress ?? 'Not active'], ['Duration', state.providers.postway.forwardingMonths ? `${state.providers.postway.forwardingMonths} months` : '—']];
+  if (config.id === 'haven') return [['Insured address', state.providers.haven.insuredAddress], ['Cover', `${state.providers.haven.cover} · £${state.providers.haven.monthlyPremium}/mo`]];
   return [['Current plan', `${state.providers.wavelength.plan} · £${state.providers.wavelength.monthlyCost}/mo`], ['Service address', state.providers.wavelength.serviceAddress]];
 }
 
 export default function ProviderSite({ config }: { config: ProviderConfig }) {
   const [toolsReady, setToolsReady] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [relayState, setRelayState] = useState<RelayState>(loadRelayState);
+  const [relayState, setRelayState] = useState<RelayState>(INITIAL_STATE);
   const rows = useMemo(() => providerRows(config, relayState), [config, relayState]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setRelayState(loadRelayState()), 0);
     const sync = (event: StorageEvent) => { if (event.key === RELAY_STORAGE_KEY) setRelayState(loadRelayState()); };
     const sameTabSync = (event: Event) => setRelayState((event as CustomEvent<RelayState>).detail);
     window.addEventListener('storage', sync);
     window.addEventListener('relay-state-change', sameTabSync);
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener('storage', sync);
       window.removeEventListener('relay-state-change', sameTabSync);
     };
