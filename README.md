@@ -43,7 +43,7 @@ npm run build
 3. Show the agent discovering `relay_get_mission`, `relay_get_permissions`, and the fictional provider tools.
 4. Invoke `internet_preview_transfer` with `2026-09-15` and the destination postcode.
 5. Show its `approval_required` result and invoke `relay_request_human_approval`.
-6. Review the visible £36 → £42 proposal and press **Approve once & continue** as the human.
+6. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
 7. Show mission completion, the untouched employer service, and the new Wavelength receipt.
 8. Open the Wavelength fictional service to show its imperative tools and declarative manual-approval form.
 

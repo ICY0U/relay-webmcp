@@ -14,14 +14,14 @@ Covered rules include initial approval pause, exact service mutation, blocked em
 
 ## Browser
 
-- Root mission-control route loaded successfully.
+- Redesigned root mission-control route loaded successfully with labelled navigation, larger typography, recognizable service icons, and a clear human-decision column.
 - Permissions panel showed allow, ask, and never-change boundaries.
-- Approval modal showed exact £36 → £42 effects, date, contract, and single-use scope.
+- Approval modal showed exact £36 → £42 effects, date, contract, single-use scope, and kept the confirmation button disabled until the monthly increase was acknowledged.
 - Human confirmation changed the mission to complete-within-policy.
 - Wavelength receipt appeared as the fourth append-only receipt.
 - Reset returned the mission to the approval checkpoint.
 - Wavelength service page exposed its imperative tool list and declarative `wavelength_confirm_plan` form.
-- Desktop (1440 × 900) and narrow responsive layouts were inspected.
+- Desktop (1440 × 900) and mobile (390 × 844) layouts were inspected for hierarchy, readability, clipping, and navigation.
 - Root and Wavelength pages produced no browser console warnings or errors.
 
 ## Remaining judge-environment check

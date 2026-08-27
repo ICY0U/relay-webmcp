@@ -21,8 +21,8 @@ Delivered: delegation-policy panel, human approval modal, completed-within-polic
 Test:
 
 1. Open **Permissions** and verify employer details and marketing preferences appear under **Never change**.
-2. Press **Review & approve**, confirm the exact price, move date, contract, and one-action scope.
-3. Press **Approve once & continue**.
+2. Press **Review this decision**, confirm the exact price, move date, contract, and one-action scope.
+3. Acknowledge the £6 monthly increase, then press **Approve once & continue**.
 4. Verify progress becomes 100%, Hearth remains blocked, and a fourth Wavelength receipt appears.
 5. Reset the demo and repeat; verify only one receipt is created per run.
 
