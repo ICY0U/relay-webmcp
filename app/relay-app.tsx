@@ -27,22 +27,24 @@ import {
   RefreshCw,
   Play,
   ShieldCheck,
+  ShieldAlert,
   Sparkles,
   Umbrella,
   Wifi,
   X,
   Zap,
 } from 'lucide-react';
-import { approveInternetTransfer, beginService, buildInternetCommitRequest, completeService, configureMission, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, startMission, type MissionConfig, type RelayService, type RelayState } from '@/lib/relay';
+import { approveInternetTransfer, beginService, buildInternetCommitRequest, completeService, configureMission, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, runSafetyChallenge, startMission, type MissionConfig, type RelayService, type RelayState, type SafetyChallengeId } from '@/lib/relay';
 import { clearRelayState, loadRelayState, persistRelayState, RELAY_STORAGE_KEY } from '@/lib/relay-storage';
 import { useWebMCP } from '@/lib/use-webmcp';
 
-type Drawer = 'permissions' | 'receipts' | 'activity' | 'service' | null;
+type Drawer = 'permissions' | 'receipts' | 'activity' | 'safety' | 'service' | null;
 
 const navItems = [
   { id: null, label: 'Move plan', icon: Home },
   { id: 'activity' as const, label: 'Activity', icon: ActivityIcon },
   { id: 'permissions' as const, label: 'Permissions', icon: ShieldCheck },
+  { id: 'safety' as const, label: 'Safety proof', icon: ShieldAlert },
   { id: 'receipts' as const, label: 'Receipts', icon: ReceiptText },
 ];
 
@@ -138,6 +140,12 @@ export default function RelayApp() {
       setToast('Agent commit verified — receipt RCT-WAV-0915 created');
       window.setTimeout(() => setToast(null), 3400);
     },
+    onRunSafetyChallenge: (challengeId) => {
+      setState((current) => runSafetyChallenge(current, challengeId));
+      setDrawer('safety');
+      setToast('Safety challenge blocked — provider data unchanged');
+      window.setTimeout(() => setToast(null), 3000);
+    },
     onRunMission: runMission,
   });
   const allowed = state.services.filter((service) => service.tone !== 'blocked');
@@ -184,6 +192,7 @@ export default function RelayApp() {
               <Icon size={19} strokeWidth={1.9} />
               <span>{label}</span>
               {label === 'Receipts' && <b>{state.receipts.length}</b>}
+              {label === 'Safety proof' && state.refusals.length > 0 && <b>{state.refusals.length}</b>}
             </button>
           ))}
         </nav>
@@ -348,6 +357,11 @@ export default function RelayApp() {
             {drawer === 'permissions' && <PermissionsPanel state={state} />}
             {drawer === 'receipts' && <ReceiptsPanel state={state} />}
             {drawer === 'activity' && <ActivityPanel activity={state.activity} webmcp={webmcp} />}
+            {drawer === 'safety' && <SafetyPanel state={state} onRun={(challengeId) => {
+              setState((current) => runSafetyChallenge(current, challengeId));
+              setToast('Safety challenge blocked — provider data unchanged');
+              window.setTimeout(() => setToast(null), 3000);
+            }} />}
             {drawer === 'service' && selectedService && <ServicePanel service={selectedService} state={state} />}
           </aside>
         </div>
@@ -493,6 +507,30 @@ function ActivityPanel({ activity, webmcp }: { activity: RelayState['activity'];
   return <><PanelHeading kicker="Agent trace" title="Structured, not simulated." body="This timeline mirrors the same state used by the visible UI and WebMCP callbacks." />
     <div className={`mcp-status ${webmcp.supported ? 'live' : ''}`}><RadioTower size={18} /><div><strong>{webmcp.supported ? 'WebMCP available' : 'Human demo mode'}</strong><span>{webmcp.supported ? `${webmcp.registeredCount} RELAY tools registered` : 'The full visible flow remains available.'}</span></div></div>
     {activity.length === 0 ? <div className="empty-panel"><ActivityIcon size={25} /><strong>Waiting to begin</strong><p>The live agent trace will appear here as each structured action runs.</p></div> : <div className="activity-list">{activity.map((item) => <article key={item.id}><time>{new Date(item.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time><div><span>{item.kind}</span><p>{item.label}</p></div></article>)}</div>}
+  </>;
+}
+
+const SAFETY_CHALLENGES: Array<{ id: SafetyChallengeId; title: string; attempt: string; proof: string }> = [
+  { id: 'forbidden_employer_change', title: 'Protected data request', attempt: 'Change employer address and marketing preferences', proof: 'Blocked before Hearth provider access' },
+  { id: 'changed_terms', title: 'Provider changes the price', attempt: 'Use £42 approval after price rises to £44', proof: 'Exact approval terms no longer match' },
+  { id: 'expired_approval', title: 'Expired approval grant', attempt: 'Commit after the ten-minute grant lifetime', proof: 'Expired permission cannot authorize a mutation' },
+  { id: 'replayed_approval', title: 'Approval replay attack', attempt: 'Reuse a grant after its first successful commit', proof: 'Consumed permission is permanently closed' },
+  { id: 'out_of_order_action', title: 'Out-of-order provider action', attempt: 'Start Northstar before Civic has completed', proof: 'Execution order is enforced before a tool runs' },
+];
+
+function SafetyPanel({ state, onRun }: { state: RelayState; onRun: (challengeId: SafetyChallengeId) => void }) {
+  return <><PanelHeading kicker="Live safety evaluation" title="Prove what RELAY refuses." body="These controlled challenges use the same policy and approval enforcement as live WebMCP commits. Successful action receipts stay separate from refusal proof." />
+    <div className="safety-assurance"><ShieldCheck size={18} /><div><strong>{state.refusals.length} of {SAFETY_CHALLENGES.length} challenges proven</strong><span>Every result confirms provider state remained unchanged.</span></div></div>
+    <div className="safety-challenge-list">{SAFETY_CHALLENGES.map((challenge) => {
+      const refusal = state.refusals.find((item) => item.challengeId === challenge.id);
+      return <article className={`safety-challenge ${refusal ? 'passed' : ''}`} key={challenge.id}>
+        <header><span>{refusal ? <Check size={14} /> : <ShieldAlert size={14} />}</span><div><strong>{challenge.title}</strong><small>{challenge.attempt}</small></div>{refusal && <code>{refusal.refusalId}</code>}</header>
+        <p>{refusal ? refusal.rule : challenge.proof}</p>
+        {refusal && <div className="refusal-proof"><LockKeyhole size={13} /><span><strong>Blocked · no provider change</strong><small>{refusal.reason.replaceAll('_', ' ')}</small></span></div>}
+        <button onClick={() => onRun(challenge.id)}>{refusal ? 'Run again' : 'Run safety challenge'} <Play size={12} fill="currentColor" /></button>
+      </article>;
+    })}</div>
+    <span className="safety-footnote"><RadioTower size={12} /> Also available through <code>relay_run_safety_challenge</code></span>
   </>;
 }
 

@@ -1,4 +1,4 @@
-import { buildInternetCommitRequest, getInternetCommitAuthorization, getMissionSnapshot, POLICY, type InternetCommitRequest, type RelayState } from './relay';
+import { buildInternetCommitRequest, getInternetCommitAuthorization, getMissionSnapshot, POLICY, runSafetyChallenge, type InternetCommitRequest, type RelayState, type SafetyChallengeId } from './relay';
 
 export type ToolDefinition = {
   name: string;
@@ -16,6 +16,7 @@ export type RelayToolCallbacks = {
   onBeginService: (serviceId: string) => void;
   onCompleteService: (serviceId: string) => void;
   onCommit: (request: InternetCommitRequest) => void;
+  onRunSafetyChallenge: (challengeId: SafetyChallengeId) => void;
   onRunMission: () => Promise<void> | void;
   now?: () => Date;
 };
@@ -57,6 +58,31 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       description: 'List each fictional provider, its current state, and available WebMCP tools.',
       inputSchema: emptySchema, annotations: readOnly,
       execute: () => ({ services: callbacks.getState().services.map(({ id, name, status, tools }) => ({ id, name, status, tools })) }),
+    },
+    {
+      name: 'relay_get_safety_proof', title: 'Get RELAY safety proof',
+      description: 'Read refusal records from controlled safety challenges. These are separate from successful action receipts and confirm provider state was not changed.',
+      inputSchema: emptySchema, annotations: readOnly,
+      execute: () => ({ refusals: callbacks.getState().refusals }),
+    },
+    {
+      name: 'relay_run_safety_challenge', title: 'Run a RELAY safety challenge',
+      description: 'Run one controlled adversarial request through the same policy and approval enforcement used by live provider actions, then show the refusal in RELAY.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          challengeId: { type: 'string', enum: ['forbidden_employer_change', 'changed_terms', 'expired_approval', 'replayed_approval', 'out_of_order_action'] },
+        },
+        required: ['challengeId'], additionalProperties: false,
+      },
+      execute: (rawInput) => {
+        const input = objectInput(rawInput);
+        const challengeId = input.challengeId as SafetyChallengeId;
+        if (!['forbidden_employer_change', 'changed_terms', 'expired_approval', 'replayed_approval', 'out_of_order_action'].includes(challengeId)) return { status: 'not_found', challengeId: input.challengeId ?? null };
+        const proof = runSafetyChallenge(callbacks.getState(), challengeId, callbacks.now?.() ?? new Date()).refusals[0];
+        callbacks.onRunSafetyChallenge(challengeId);
+        return { status: 'blocked', ...proof };
+      },
     },
 
     {

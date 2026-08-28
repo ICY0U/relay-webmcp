@@ -12,7 +12,7 @@ The agent can inspect accounts, preview changes, and complete low-risk actions w
 
 Ordinary browser automation guesses at pixels and page structure. RELAY instead uses focused, structured tools exposed through `document.modelContext`, plus a declarative semantic form for the final high-risk confirmation. The human and agent share the same live move-plan state and visible UI.
 
-The demo proves five ideas:
+The demo proves seven ideas:
 
 1. **Structured delegation** — allowed fields, forbidden changes, spend boundaries, and expiry are explicit and enforced.
 2. **Preview before commit** — risky effects are calculated before any mutation.
@@ -20,6 +20,7 @@ The demo proves five ideas:
 4. **Single-use approval grants** — approval is bound to one provider, one action, exact reviewed terms, a ten-minute lifetime, and one use.
 5. **Action receipts** — every mutation returns a compact, inspectable audit record, including the grant consumed for a human-approved action.
 6. **Visible orchestration** — RELAY contains a complete built-in move coordinator, while real provider-level WebMCP tool calls can also drive the same plan state, activity trace, and receipts.
+7. **Executable safety proof** — judges can run five controlled adversarial requests through the real policy seam and inspect refusal records that prove provider state did not change.
 
 ## Run locally
 
@@ -45,10 +46,11 @@ npm run build
 3. Show Civic, Northstar, Clearflow, Postway, and Haven execute in sequence; each action changes the visible plan and creates a receipt.
 4. Show RELAY pause at 83% before the Wavelength price increase while Hearth remains blocked.
 5. Open **Activity** to show the live structured trace, then **Permissions** to show the precise boundary.
-6. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
-7. Show RELAY commit the narrowly approved transfer, then show completion and all six receipts.
-8. Reload the app to prove that the plan and receipts persist, then open Clearflow or Haven to show its account changed to the configured destination.
-9. Open Wavelength to show its standalone WebMCP surface and declarative manual-approval form.
+6. Open **Safety proof** and run a changed-terms challenge to show a refusal record without changing a provider or adding a success receipt.
+7. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
+8. Show RELAY commit the narrowly approved transfer, then show completion and all six receipts.
+9. Reload the app to prove that the plan and receipts persist, then open Clearflow or Haven to show its account changed to the configured destination.
+10. Open Wavelength to show its standalone WebMCP surface and declarative manual-approval form.
 
 ## WebMCP surface
 
@@ -57,6 +59,8 @@ npm run build
 | `relay_get_move_plan` | Read | Current move plan and approval state |
 | `relay_get_permissions` | Read | Exact delegation boundaries |
 | `relay_get_service_plan` | Read | Providers, state, and tools |
+| `relay_get_safety_proof` | Read | Refusal records from controlled safety challenges |
+| `relay_run_safety_challenge` | Safety action | Exercises the real policy seam without mutating provider state |
 | `relay_execute_allowed_plan` | Guided fallback | Runs the visible fallback and pauses at the human gate |
 | `internet_preview_transfer` | Read/preview | Exact plan and price effects |
 | `relay_request_human_approval` | UI handoff | Opens the visible human gate; never approves |
@@ -64,7 +68,7 @@ npm run build
 | `relay_list_receipts` | Read | Compact audit timeline |
 | `relay_get_receipt` | Read | Full structured receipt |
 
-The move-plan page registers twenty-five tools, including provider-level account, preview, and commit actions whose callbacks update the visible plan state. These provide an additional interface for ChatGPT and other WebMCP agents; the human-facing plan remains fully usable without leaving RELAY. Six fictional provider pages expose their own standalone tool surfaces. Wavelength includes the declarative `wavelength_confirm_plan` form without autosubmit so only a person can submit it.
+The move-plan page registers twenty-seven tools, including provider-level account, preview, commit, and safety-evaluation actions whose callbacks update the visible plan state. These provide an additional interface for ChatGPT and other WebMCP agents; the human-facing plan remains fully usable without leaving RELAY. Six fictional provider pages expose their own standalone tool surfaces. Wavelength includes the declarative `wavelength_confirm_plan` form without autosubmit so only a person can submit it.
 
 ## Security design
 
@@ -75,6 +79,7 @@ The move-plan page registers twenty-five tools, including provider-level account
 - Approval grants are bound to the provider, mutation, plan, price, contract, move date, and postcode; they expire after ten minutes and are consumed atomically.
 - Changed terms, wrong-provider use, wrong-action use, expired grants, and replay are denied before mutation.
 - Forbidden employer and marketing changes never receive a tool path.
+- Controlled safety challenges reuse the production policy functions and create separate refusal proof with `providerStateChanged: false`.
 - Mutations and UI updates share the same domain functions.
 - Unsupported browsers fall back to a complete human-driven demo instead of crashing.
 - All providers, account data, people, addresses, and transactions are fictional.

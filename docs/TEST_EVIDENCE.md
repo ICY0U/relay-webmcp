@@ -6,7 +6,7 @@ Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 
 ## Automated
 
-- `npm test`: 18/18 passed.
+- `npm test`: 24/24 passed.
 - `npm run lint`: passed with zero warnings or errors.
 - `npm run build`: production build passed for `/` and `/providers/:provider`.
 - `npm audit --omit=dev`: zero production vulnerabilities.
@@ -14,6 +14,8 @@ Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 Covered rules include the editable draft state, custom move-plan projection into provider accounts, configurable auto-approval thresholds, real provider-tool-driven service mutation, enforced service order, blocked employer preservation, receipt creation, replay safety, denial before preview, denial before approval, visible approval request, guided fallback, and commit after approval.
 
 The Day 1 trust suite additionally covers exact approval-grant scope, changed terms, wrong-provider use, wrong-action use, ten-minute expiry, atomic consumption, WebMCP replay refusal, and grant-to-receipt linkage.
+
+The Day 2 safety suite covers protected-data refusal without mutation, changed/expired/replayed approval rejection, domain-level out-of-order blocking, the twenty-seven-tool surface, and visible WebMCP safety challenge execution and inspection.
 
 ## Browser
 
@@ -34,6 +36,9 @@ The Day 1 trust suite additionally covers exact approval-grant scope, changed te
 - The full ready → running → approval → committing → complete journey produced no browser console warnings or errors.
 - The approval checkpoint displayed the exact provider, action, price, contract, move date, ten-minute lifetime, and one-use rule before the human decision.
 - `GRT-WAV-300-0915` was consumed once, permanently closed, and recorded on `RCT-WAV-0915`.
+- The production build's **Safety proof** panel was visually inspected with all five challenge cards, stable denial IDs, enforcing rules, and no-provider-change proof.
+- All five controlled challenges reached **5 of 5 challenges proven** while the success receipt count remained zero.
+- After all five challenges, the normal built-in runner still reached the 83% human gate, accepted the exact single-use approval, and completed all six allowed provider changes.
 
 ## Remaining judge-environment check
 

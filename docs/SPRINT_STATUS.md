@@ -6,7 +6,7 @@ This file is the recovery point for the three-hour heartbeat. Resume the highest
 
 ## Day 1 — Permission model as the star
 
-Status: implementation and local verification complete; checkpoint publishing next.
+Status: complete and deployed as Sites version 9.
 
 - Exact single-use approval-grant module added at the domain seam.
 - Grant binds provider, action, proposal, plan, price, contract, move date, and postcode.
@@ -18,14 +18,25 @@ Status: implementation and local verification complete; checkpoint publishing ne
 - Lint and production build: passing.
 - Local browser: draft, 83% human gate, exact approval, 100% completion, and consumed-grant proof inspected.
 
-## Next checkpoint — Day 2 safety proof
+## Day 2 — Executable safety proof
 
-1. Add a compact judge-facing safety proof mode.
-2. Demonstrate forbidden employer or marketing changes rejected before mutation.
-3. Demonstrate changed provider terms invalidate approval.
-4. Demonstrate expired, replayed, and out-of-order actions safely refused.
-5. Add visible refusal receipts without mixing them with completed action receipts.
-6. Run the golden path after the safety challenges and deploy.
+Status: implementation, automated verification, and production-build browser verification complete; publishing next.
+
+- Added a compact judge-facing **Safety proof** panel and navigation badge.
+- Added protected-data, changed-terms, expired-grant, replayed-grant, and out-of-order controlled challenges.
+- Reused the real approval and service-order domain enforcement instead of a simulated demo-only rules engine.
+- Added separate refusal proof with stable denial IDs and `providerStateChanged: false`; success receipts remain untouched.
+- Added `relay_get_safety_proof` and `relay_run_safety_challenge`, bringing the move-plan surface to twenty-seven WebMCP tools.
+- Storage ledger moved to v5 for refusal records.
+- Automated tests: 24 passing; lint and production build passing.
+- Production build browser check: five of five challenges proven, zero success receipts, then the complete move path passed through the human gate to 100%.
+
+## Next checkpoint — Day 3 showcase polish
+
+1. Tighten first-viewport judge orientation and make the intended three-minute path unmistakable.
+2. Add guided demo cues without weakening the one-screen mission-control experience.
+3. Complete keyboard, focus, contrast, reduced-motion, and responsive accessibility checks.
+4. Capture clean baseline screenshots and freeze product features after verification.
 
 ## Later checkpoints
 

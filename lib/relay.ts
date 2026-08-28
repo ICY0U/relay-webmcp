@@ -49,7 +49,23 @@ export type ActivityEntry = {
   id: string;
   timestamp: string;
   label: string;
-  kind: 'Policy check' | 'Tool call' | 'Tool result' | 'Human approval' | 'Approval grant';
+  kind: 'Policy check' | 'Tool call' | 'Tool result' | 'Human approval' | 'Approval grant' | 'Safety refusal';
+};
+
+export type SafetyChallengeId = 'forbidden_employer_change' | 'changed_terms' | 'expired_approval' | 'replayed_approval' | 'out_of_order_action';
+
+export type RefusalRecord = {
+  refusalId: string;
+  challengeId: SafetyChallengeId;
+  title: string;
+  attemptedAction: string;
+  target: string;
+  decision: 'blocked';
+  reason: string;
+  rule: string;
+  policyId: string;
+  timestamp: string;
+  providerStateChanged: false;
 };
 
 export type InternetCommitRequest = {
@@ -87,6 +103,7 @@ export type RelayState = {
   providers: ProviderAccounts;
   services: RelayService[];
   receipts: Receipt[];
+  refusals: RefusalRecord[];
   activity: ActivityEntry[];
 };
 
@@ -140,6 +157,7 @@ export const INITIAL_STATE: RelayState = {
   providers: INITIAL_PROVIDERS,
   services: INITIAL_SERVICES,
   receipts: [],
+  refusals: [],
   activity: [],
 };
 
@@ -170,7 +188,72 @@ export function configureMission(state: RelayState, mission: MissionConfig, now 
     providers,
     services: createServices(mission),
     receipts: [],
+    refusals: [],
     activity: [activity('plan-configured', `Move plan configured for ${mission.newAddress}`, 'Policy check', now)],
+  };
+}
+
+export function runSafetyChallenge(state: RelayState, challengeId: SafetyChallengeId, now = new Date()): RelayState {
+  let refusal: RefusalRecord;
+  if (challengeId === 'forbidden_employer_change') {
+    refusal = {
+      refusalId: 'DENY-EMPLOYER-001', challengeId,
+      title: 'Forbidden data request stopped',
+      attemptedAction: 'Update employer address and marketing preferences',
+      target: 'Hearth employer records', decision: 'blocked', reason: 'forbidden_by_policy', rule: 'Employer details',
+      policyId: POLICY.id, timestamp: now.toISOString(), providerStateChanged: false,
+    };
+  } else if (challengeId === 'out_of_order_action') {
+    const authorization = getServiceStartAuthorization(state, 'northstar');
+    refusal = {
+      refusalId: 'DENY-ORDER-001', challengeId,
+      title: 'Out-of-order action stopped',
+      attemptedAction: 'Start Northstar before Civic completed',
+      target: 'Northstar energy account', decision: 'blocked',
+      reason: authorization.status === 'denied' ? authorization.reason : 'service_order_violation',
+      rule: 'Civic must complete before Northstar starts',
+      policyId: POLICY.id, timestamp: now.toISOString(), providerStateChanged: false,
+    };
+  } else {
+    const grantedAt = new Date(now.getTime() - (challengeId === 'expired_approval' ? 11 : 2) * 60 * 1000);
+    const sandboxBase: RelayState = {
+      ...state,
+      missionStatus: 'running',
+      approvalStatus: 'not_requested',
+      approvalGrant: null,
+      mission: { ...state.mission, approvalThreshold: 0 },
+    };
+    const granted = grantInternetApproval(requestInternetApproval(sandboxBase, grantedAt), grantedAt);
+    const exactRequest = buildInternetCommitRequest(granted);
+    const evaluatedState = challengeId === 'replayed_approval'
+      ? approveInternetTransfer(granted, exactRequest, new Date(now.getTime() - 60 * 1000))
+      : granted;
+    const attemptedRequest = challengeId === 'changed_terms'
+      ? { ...exactRequest, monthlyCost: 44 } as unknown as InternetCommitRequest
+      : exactRequest;
+    const authorization = getInternetCommitAuthorization(evaluatedState, attemptedRequest, now);
+    const reason = authorization.status === 'denied' ? authorization.reason : 'human_approval_required';
+    const definitions = {
+      changed_terms: { refusalId: 'DENY-TERMS-001', title: 'Changed provider terms stopped', attemptedAction: 'Commit Fibre 300 after price changed from £42 to £44', rule: 'Approval must match exact reviewed terms' },
+      expired_approval: { refusalId: 'DENY-EXPIRED-001', title: 'Expired approval stopped', attemptedAction: 'Commit Wavelength transfer after the grant expired', rule: 'Approval expires after 10 minutes' },
+      replayed_approval: { refusalId: 'DENY-REPLAY-001', title: 'Approval replay stopped', attemptedAction: 'Reuse an approval grant after its first commit', rule: 'Approval grants are single-use' },
+    } as const;
+    const definition = definitions[challengeId];
+    refusal = {
+      ...definition,
+      challengeId,
+      target: 'Wavelength internet account',
+      decision: 'blocked',
+      reason,
+      policyId: POLICY.id,
+      timestamp: now.toISOString(),
+      providerStateChanged: false,
+    };
+  }
+  return {
+    ...state,
+    refusals: [refusal, ...state.refusals.filter((item) => item.challengeId !== challengeId)],
+    activity: [activity(`safety-${challengeId}`, `${refusal.attemptedAction} blocked before provider access`, 'Safety refusal', now), ...state.activity],
   };
 }
 
@@ -185,13 +268,26 @@ export function startMission(state: RelayState, now = new Date()): RelayState {
 
 export function beginService(state: RelayState, serviceId: string, now = new Date()): RelayState {
   const service = state.services.find((item) => item.id === serviceId);
-  if (!service || service.tone !== 'queued' || !['ready', 'running'].includes(state.missionStatus)) return state;
+  if (!service || service.tone !== 'queued' || !['ready', 'running'].includes(state.missionStatus) || getServiceStartAuthorization(state, serviceId).status === 'denied') return state;
   return {
     ...state,
     missionStatus: 'running',
     services: state.services.map((item) => item.id === serviceId ? { ...item, tone: 'running', status: 'Executing' } : item),
     activity: [activity(`${serviceId}-call`, `${service.name} tools invoked with policy-scoped data`, 'Tool call', now), ...state.activity],
   };
+}
+
+const SERVICE_EXECUTION_ORDER = ['civic', 'northstar', 'clearflow', 'postway', 'haven', 'wavelength'] as const;
+
+export function getServiceStartAuthorization(state: RelayState, serviceId: string):
+  | { status: 'allowed' }
+  | { status: 'denied'; reason: 'service_order_violation' | 'service_not_allowed'; requiredServiceId?: string } {
+  const index = SERVICE_EXECUTION_ORDER.indexOf(serviceId as typeof SERVICE_EXECUTION_ORDER[number]);
+  if (index < 0) return { status: 'denied', reason: 'service_not_allowed' };
+  const requiredServiceId = SERVICE_EXECUTION_ORDER.slice(0, index).find((id) => state.services.find((service) => service.id === id)?.tone !== 'done');
+  return requiredServiceId
+    ? { status: 'denied', reason: 'service_order_violation', requiredServiceId }
+    : { status: 'allowed' };
 }
 
 export function completeService(state: RelayState, serviceId: string, now = new Date()): RelayState {

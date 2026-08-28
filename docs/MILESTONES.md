@@ -35,12 +35,12 @@ Pass condition: configuration is real, approval is explicit and exact, fictional
 
 ## Milestone 3 — WebMCP orchestration
 
-Delivered: twenty-five focused tools with JSON schemas, provider-level account/preview/commit actions, read-only hints, structured results, a guided fallback, preview/commit separation, visible approval handoff, sequence enforcement, denial handling, and unsupported-browser fallback.
+Delivered: twenty-seven focused tools with JSON schemas, provider-level account/preview/commit actions, safety-evaluation tools, read-only hints, structured results, a guided fallback, preview/commit separation, visible approval handoff, sequence enforcement, denial handling, and unsupported-browser fallback.
 
 Test in Chrome 149+ with WebMCP enabled:
 
 1. Open DevTools → Application → WebMCP.
-2. Confirm twenty-five RELAY and provider tools appear.
+2. Confirm twenty-seven RELAY and provider tools appear.
 3. Invoke `relay_get_permissions` with `{}`.
 4. Invoke the Civic, Northstar, Clearflow, Postway, and Haven preview/commit pairs in sequence and verify each visible row and receipt updates from the tool call.
 5. Invoke `internet_preview_transfer` with `{"moveDate":"2026-09-15","postcode":"SE1 2AB"}` and verify the visible plan pauses at 83% with `approval_required`.
@@ -92,3 +92,18 @@ Test:
 5. Attempt changed-price, wrong-provider, wrong-action, expired, and replayed commits through the test suite.
 
 Pass condition: only the exact reviewed action can consume the grant, it can be consumed once, and the UI, tool result, activity trace, and receipt agree.
+
+## Milestone 7 — Live safety proof
+
+Delivered: a judge-facing **Safety proof** panel, five controlled adversarial challenges, refusal records separate from successful action receipts, provider-state invariance, domain-level service-order enforcement, and the `relay_get_safety_proof` and `relay_run_safety_challenge` WebMCP tools.
+
+Test:
+
+1. Open **Safety proof** from a fresh move plan.
+2. Run protected-data, changed-terms, expired-grant, replayed-grant, and out-of-order challenges.
+3. Confirm every card shows a stable denial ID, the enforcing rule, and **Blocked · no provider change**.
+4. Confirm the Safety proof badge reaches five while the Receipts badge remains zero.
+5. Close the panel and run the complete move plan to the human approval gate and 100% completion.
+6. Invoke `relay_run_safety_challenge` through WebMCP and inspect the same visible proof with `relay_get_safety_proof`.
+
+Pass condition: all five unsafe requests are rejected by the same domain enforcement used by real commits, no challenge mutates a provider or creates a success receipt, and the normal demo path still completes.
