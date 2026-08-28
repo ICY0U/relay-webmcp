@@ -6,7 +6,7 @@ Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 
 ## Automated
 
-- `npm test`: 26/26 passed.
+- `npm test`: 27/27 passed.
 - `npm run lint`: passed with zero warnings or errors.
 - `npm run build`: production build passed for `/` and `/providers/:provider`.
 - `npm audit --omit=dev`: zero production vulnerabilities.
@@ -42,6 +42,15 @@ The Day 2 safety suite covers protected-data refusal without mutation, changed/e
 - The four-act **3-minute guide** advanced from boundaries → coordination → human decision → proof using real mission state and launched each next valid action.
 - Completing one safety challenge after six successful provider changes advanced the guide to four of four while preserving refusal and success evidence as separate record types.
 - The guide and other drawers expose accessible dialog names; Escape dismissal and semantic mission progress were exercised in the browser.
+- Ten isolated WebMCP-definition rehearsals each completed six provider mutations, produced six unique receipts, consumed one exact approval grant, and reached `complete`.
+- Ten consecutive production-build UI rehearsals each completed draft → review → five safe actions → human gate → exact approval → sixth receipt → reset.
+- Runtime logs after the ten UI rehearsals contained zero warnings and zero errors; the connected Chrome check also loaded without warnings or errors.
+
+## Judge-browser status
+
+- A connected Chrome browser loaded the production build successfully, but reported **Demo mode**, confirming `document.modelContext` is not enabled in that browser profile yet.
+- Browser automation is not permitted to open or modify the protected `chrome://flags` page. The remaining manual check is to enable **WebMCP for testing** in the recording profile, relaunch Chrome, and confirm **27 tools live** before the final recording.
+- Until that manual browser setting is enabled, tool behavior is verified through the exact registered tool definitions and callbacks rather than claiming an official browser-registration pass.
 
 ## Remaining judge-environment check
 

@@ -219,6 +219,41 @@ describe('RELAY WebMCP tools', () => {
     expect(state.services.find((service) => service.id === 'wavelength')?.tone).toBe('review');
   });
 
+  it('completes ten isolated tool-driven rehearsals with six receipts and one consumed grant each', async () => {
+    for (let rehearsal = 1; rehearsal <= 10; rehearsal += 1) {
+      const commitTime = new Date(`2026-08-27T14:${String(rehearsal).padStart(2, '0')}:00.000Z`);
+      let state = READY_STATE;
+      const tools = createRelayTools(callbacks({
+        getState: () => state,
+        now: () => commitTime,
+        onBeginService: (serviceId) => { state = beginService(startMission(state), serviceId); },
+        onCompleteService: (serviceId) => { state = completeService(state, serviceId); },
+        onApprovalRequired: () => { state = requestInternetApproval(state); },
+        onCommit: (request) => { state = approveInternetTransfer(state, request, commitTime); },
+      }));
+      const call = (name: string, input: unknown = {}) => tools.find((tool) => tool.name === name)?.execute(input);
+
+      await call('council_preview_move', { newAddress: '18 River Lane', moveDate: '2026-09-15' });
+      await call('council_commit_move');
+      await call('energy_preview_move', { moveDate: '2026-09-15' });
+      await call('energy_schedule_move');
+      await call('water_preview_move', { moveDate: '2026-09-15', postcode: 'SE1 2AB' });
+      await call('water_schedule_move');
+      await call('postal_preview_forwarding', { months: 6 });
+      await call('postal_schedule_forwarding');
+      await call('insurance_preview_address_change', { newAddress: '18 River Lane', moveDate: '2026-09-15' });
+      await call('insurance_commit_address_change');
+      await call('internet_preview_transfer', { moveDate: '2026-09-15', postcode: 'SE1 2AB' });
+      state = grantInternetApproval(state, new Date(commitTime.getTime() - 60_000));
+      expect(await call('internet_commit_transfer', buildInternetCommitRequest(state))).toMatchObject({ status: 'completed', grantId: 'GRT-WAV-300-0915' });
+
+      expect(state.missionStatus, `rehearsal ${rehearsal}`).toBe('complete');
+      expect(state.receipts, `rehearsal ${rehearsal}`).toHaveLength(6);
+      expect(state.approvalGrant?.consumedAt, `rehearsal ${rehearsal}`).toBe(commitTime.toISOString());
+      expect(new Set(state.receipts.map((receipt) => receipt.receiptId)).size, `rehearsal ${rehearsal}`).toBe(6);
+    }
+  });
+
   it('rejects a commit before explicit human approval', async () => {
     const onCommit = vi.fn();
     const tools = createRelayTools(callbacks({ onCommit }));

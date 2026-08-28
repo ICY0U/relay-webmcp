@@ -45,11 +45,22 @@ Status: complete; feature freeze begins after this checkpoint is published.
 
 ## Next checkpoint — Day 4 judge-browser verification
 
-1. Verify all twenty-seven WebMCP tools in an official judge-compatible browser.
-2. Run the exact tool-driven golden path and capture structured inputs/results.
-3. Exercise changed-term, expiry, replay, forbidden-data, and out-of-order denials through WebMCP.
-4. Run ten clean end-to-end rehearsals and record timing, failures, and console output.
-5. Freeze implementation unless a reliability or accessibility defect is found.
+Status: reliability checkpoint passed; one manual browser-setting check remains.
+
+- Added a ten-run isolated tool-definition rehearsal: all ten completed with six unique receipts and one consumed grant.
+- Ran ten consecutive production-build UI rehearsals: all ten reached the human gate, completed, and reset successfully.
+- Browser runtime logs after the rehearsals: zero warnings and zero errors.
+- Connected Chrome loaded RELAY successfully with zero warnings or errors, but currently reports **Demo mode** because the WebMCP testing flag is not enabled in that profile.
+- The protected browser-settings URL cannot be changed through automation, so the final official registration check requires the user to enable the WebMCP testing flag and relaunch Chrome.
+- Feature implementation is frozen unless a reliability or accessibility defect is found.
+
+## Next autonomous checkpoint — Day 5 submission package
+
+1. Draft final Devpost story, built-with list, challenge explanation, and testing notes from verified behavior.
+2. Create the under-three-minute narration and shot list around the new guided showcase.
+3. Capture clean hero, human-gate, safety-proof, and receipt screenshots.
+4. Prepare the architecture visual and final repository checklist.
+5. Leave the manual Chrome flag check clearly separated from autonomous work.
 
 ## Later checkpoints
 
