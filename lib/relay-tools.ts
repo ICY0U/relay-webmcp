@@ -1,4 +1,4 @@
-import { getMissionSnapshot, POLICY, type RelayState } from './relay';
+import { buildInternetCommitRequest, getInternetCommitAuthorization, getMissionSnapshot, POLICY, type InternetCommitRequest, type RelayState } from './relay';
 
 export type ToolDefinition = {
   name: string;
@@ -15,8 +15,9 @@ export type RelayToolCallbacks = {
   onApprovalRequested: () => void;
   onBeginService: (serviceId: string) => void;
   onCompleteService: (serviceId: string) => void;
-  onCommit: () => void;
+  onCommit: (request: InternetCommitRequest) => void;
   onRunMission: () => Promise<void> | void;
+  now?: () => Date;
 };
 
 function objectInput(input: unknown): Record<string, unknown> {
@@ -49,7 +50,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
       name: 'relay_get_permissions', title: 'Get delegation permissions',
       description: 'Read the exact fields and changes this move plan allows, blocks, or requires human approval for.',
       inputSchema: emptySchema, annotations: readOnly,
-      execute: () => ({ policyId: POLICY.id, expires: `${callbacks.getState().mission.moveDate}T23:59:00`, approvalThreshold: callbacks.getState().mission.approvalThreshold, allowed: POLICY.allowed, approvalRequired: POLICY.approvalRequired, forbidden: POLICY.forbidden }),
+      execute: () => ({ policyId: POLICY.id, expires: `${callbacks.getState().mission.moveDate}T23:59:00`, approvalThreshold: callbacks.getState().mission.approvalThreshold, allowed: POLICY.allowed, approvalRequired: POLICY.approvalRequired, forbidden: POLICY.forbidden, activeApprovalGrant: callbacks.getState().approvalGrant }),
     },
     {
       name: 'relay_get_service_plan', title: 'Get service execution plan',
@@ -246,7 +247,7 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
         callbacks.onApprovalRequired();
         return mission.approvalThreshold >= 6
           ? { status: 'completed_within_policy', proposalId: 'PROP-WAV-300', receiptId: 'RCT-WAV-0915', policyDecision: 'allowed_by_threshold' }
-          : { status: 'approval_required', proposalId: 'PROP-WAV-300', current: { plan: 'Standard 100', monthlyCost: 36 }, proposed: { plan: 'Fibre 300', monthlyCost: 42 }, reason: 'Recurring cost increases by £6.', policyDecision: 'human_required' };
+          : { status: 'approval_required', ...buildInternetCommitRequest(callbacks.getState()), current: { plan: 'Standard 100', monthlyCost: 36 }, proposed: { plan: 'Fibre 300', monthlyCost: 42 }, reason: 'Recurring cost increases by £6.', policyDecision: 'human_required' };
       },
     },
     {
@@ -263,14 +264,29 @@ export function createRelayTools(callbacks: RelayToolCallbacks): ToolDefinition[
     },
     {
       name: 'internet_commit_transfer', title: 'Commit internet transfer',
-      description: 'Commit the exact Wavelength proposal. Rejects attempts without matching explicit human approval.',
-      inputSchema: { type: 'object', properties: { proposalId: { type: 'string', enum: ['PROP-WAV-300'], description: 'Approved proposal identifier.' } }, required: ['proposalId'], additionalProperties: false },
+      description: 'Commit the exact Wavelength proposal using a matching, unexpired, single-use human approval grant. Rejects changed terms, wrong actions, expiry, and replay.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          proposalId: { type: 'string', enum: ['PROP-WAV-300'], description: 'Approved proposal identifier.' },
+          providerId: { type: 'string', enum: ['wavelength'], description: 'Provider bound to the human grant.' },
+          action: { type: 'string', enum: ['internet_commit_transfer'], description: 'Exact mutation authorized by the human.' },
+          plan: { type: 'string', enum: ['Fibre 300'] },
+          monthlyCost: { type: 'number', enum: [42] },
+          contractMonths: { type: 'number', enum: [12] },
+          moveDate: { type: 'string', description: 'Approved move date in YYYY-MM-DD format.' },
+          postcode: { type: 'string', description: 'Approved destination postcode.' },
+        },
+        required: ['proposalId', 'providerId', 'action', 'plan', 'monthlyCost', 'contractMonths', 'moveDate', 'postcode'],
+        additionalProperties: false,
+      },
       execute: (rawInput) => {
         const input = objectInput(rawInput);
-        if (input.proposalId !== 'PROP-WAV-300') return { status: 'not_found', proposalId: input.proposalId };
-        if (!['granted', 'approved'].includes(callbacks.getState().approvalStatus)) return { status: 'denied', reason: 'human_approval_required', proposalId: 'PROP-WAV-300' };
-        callbacks.onCommit();
-        return { status: 'completed', proposalId: 'PROP-WAV-300', receiptId: 'RCT-WAV-0915' };
+        const request = input as unknown as InternetCommitRequest;
+        const authorization = getInternetCommitAuthorization(callbacks.getState(), request, callbacks.now?.() ?? new Date());
+        if (authorization.status === 'denied') return { ...authorization, proposalId: input.proposalId ?? null };
+        callbacks.onCommit(request);
+        return { status: 'completed', proposalId: request.proposalId, grantId: authorization.grantId, receiptId: 'RCT-WAV-0915' };
       },
     },
 

@@ -6,12 +6,14 @@ Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 
 ## Automated
 
-- `npm test`: 12/12 passed.
+- `npm test`: 18/18 passed.
 - `npm run lint`: passed with zero warnings or errors.
 - `npm run build`: production build passed for `/` and `/providers/:provider`.
 - `npm audit --omit=dev`: zero production vulnerabilities.
 
 Covered rules include the editable draft state, custom move-plan projection into provider accounts, configurable auto-approval thresholds, real provider-tool-driven service mutation, enforced service order, blocked employer preservation, receipt creation, replay safety, denial before preview, denial before approval, visible approval request, guided fallback, and commit after approval.
+
+The Day 1 trust suite additionally covers exact approval-grant scope, changed terms, wrong-provider use, wrong-action use, ten-minute expiry, atomic consumption, WebMCP replay refusal, and grant-to-receipt linkage.
 
 ## Browser
 
@@ -30,6 +32,8 @@ Covered rules include the editable draft state, custom move-plan projection into
 - Wavelength service page exposed its imperative tool list and declarative `wavelength_confirm_plan` form.
 - Desktop (1440 × 900) and mobile (390 × 844) layouts were inspected for hierarchy, readability, clipping, and navigation.
 - The full ready → running → approval → committing → complete journey produced no browser console warnings or errors.
+- The approval checkpoint displayed the exact provider, action, price, contract, move date, ten-minute lifetime, and one-use rule before the human decision.
+- `GRT-WAV-300-0915` was consumed once, permanently closed, and recorded on `RCT-WAV-0915`.
 
 ## Remaining judge-environment check
 

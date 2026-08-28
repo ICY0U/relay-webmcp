@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   approveInternetTransfer,
   beginService,
+  buildInternetCommitRequest,
   completeService,
   configureMission,
   DEFAULT_MISSION,
   getMissionSnapshot,
+  getInternetCommitAuthorization,
   grantInternetApproval,
   INITIAL_STATE,
   requestInternetApproval,
@@ -80,10 +82,68 @@ describe('RELAY delegation state', () => {
     expect(approveInternetTransfer(INITIAL_STATE)).toBe(INITIAL_STATE);
     const waiting = requestInternetApproval(startMission(READY_STATE));
     const granted = grantInternetApproval(waiting, new Date('2026-08-27T14:00:00.000Z'));
-    const approved = approveInternetTransfer(granted, new Date('2026-08-27T14:00:01.000Z'));
+    const approved = approveInternetTransfer(granted, buildInternetCommitRequest(granted), new Date('2026-08-27T14:00:01.000Z'));
     expect(approved.approvalStatus).toBe('approved');
     expect(approved.services.find((service) => service.id === 'wavelength')?.status).toBe('Complete');
     expect(approved.receipts.at(-1)).toMatchObject({ service: 'Wavelength', policyId: 'POL-MOVE-0915', approvedBy: 'David · explicit approval' });
+  });
+
+  it('creates an exact single-use grant for the reviewed provider action', () => {
+    const grantedAt = new Date('2026-08-27T14:00:00.000Z');
+    const waiting = requestInternetApproval(startMission(READY_STATE));
+    const granted = grantInternetApproval(waiting, grantedAt);
+    const request = buildInternetCommitRequest(granted);
+
+    expect(granted.approvalGrant).toMatchObject({
+      grantId: 'GRT-WAV-300-0915',
+      proposalId: 'PROP-WAV-300',
+      providerId: 'wavelength',
+      action: 'internet_commit_transfer',
+      grantedBy: 'David',
+      grantedAt: '2026-08-27T14:00:00.000Z',
+      expiresAt: '2026-08-27T14:10:00.000Z',
+      consumedAt: null,
+      terms: { plan: 'Fibre 300', monthlyCost: 42, contractMonths: 12, moveDate: '2026-09-15', postcode: 'SE1 2AB' },
+    });
+    expect(getInternetCommitAuthorization(granted, request, new Date('2026-08-27T14:05:00.000Z'))).toEqual({
+      status: 'authorized',
+      grantId: 'GRT-WAV-300-0915',
+    });
+  });
+
+  it('rejects a provider commit when approved terms change', () => {
+    const now = new Date('2026-08-27T14:00:00.000Z');
+    const granted = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), now);
+    const changedRequest = { ...buildInternetCommitRequest(granted), monthlyCost: 44 } as unknown as ReturnType<typeof buildInternetCommitRequest>;
+
+    expect(getInternetCommitAuthorization(granted, changedRequest, new Date('2026-08-27T14:01:00.000Z'))).toEqual({
+      status: 'denied',
+      reason: 'approved_terms_changed',
+      changedFields: ['monthlyCost'],
+    });
+  });
+
+  it('rejects expired, wrong-provider, and wrong-action approval use', () => {
+    const granted = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), new Date('2026-08-27T14:00:00.000Z'));
+    const request = buildInternetCommitRequest(granted);
+
+    expect(getInternetCommitAuthorization(granted, request, new Date('2026-08-27T14:10:00.000Z'))).toMatchObject({ status: 'denied', reason: 'approval_expired' });
+    expect(getInternetCommitAuthorization(granted, { ...request, providerId: 'haven' } as unknown as typeof request, new Date('2026-08-27T14:01:00.000Z'))).toMatchObject({ status: 'denied', reason: 'wrong_provider' });
+    expect(getInternetCommitAuthorization(granted, { ...request, action: 'insurance_commit_address_change' } as unknown as typeof request, new Date('2026-08-27T14:01:00.000Z'))).toMatchObject({ status: 'denied', reason: 'wrong_action' });
+  });
+
+  it('consumes the grant once and rejects a replay', () => {
+    const granted = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), new Date('2026-08-27T14:00:00.000Z'));
+    const request = buildInternetCommitRequest(granted);
+    const approved = approveInternetTransfer(granted, request, new Date('2026-08-27T14:02:00.000Z'));
+
+    expect(approved.approvalGrant?.consumedAt).toBe('2026-08-27T14:02:00.000Z');
+    expect(approved.receipts.at(-1)).toMatchObject({ approvalGrantId: 'GRT-WAV-300-0915' });
+    expect(getInternetCommitAuthorization(approved, request, new Date('2026-08-27T14:03:00.000Z'))).toEqual({
+      status: 'denied',
+      reason: 'approval_already_used',
+    });
+    expect(approveInternetTransfer(approved, request, new Date('2026-08-27T14:03:00.000Z'))).toBe(approved);
   });
 
   it('completes a £6 increase automatically only when the configured threshold allows it', () => {
@@ -97,8 +157,10 @@ describe('RELAY delegation state', () => {
 
   it('is replay-safe and does not create a second receipt', () => {
     const waiting = requestInternetApproval(startMission(READY_STATE));
-    const approved = approveInternetTransfer(grantInternetApproval(waiting), new Date('2026-08-27T14:00:00.000Z'));
-    expect(approveInternetTransfer(approved)).toBe(approved);
+    const granted = grantInternetApproval(waiting);
+    const request = buildInternetCommitRequest(granted);
+    const approved = approveInternetTransfer(granted, request, new Date('2026-08-27T14:00:00.000Z'));
+    expect(approveInternetTransfer(approved, request)).toBe(approved);
     expect(approved.receipts).toHaveLength(1);
   });
 });
@@ -168,9 +230,37 @@ describe('RELAY WebMCP tools', () => {
   it('permits the commit only after the human-created approval state exists', async () => {
     const state = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), new Date('2026-08-27T14:00:00.000Z'));
     const onCommit = vi.fn();
-    const tools = createRelayTools(callbacks({ getState: () => state, onCommit }));
+    const tools = createRelayTools(callbacks({ getState: () => state, onCommit, now: () => new Date('2026-08-27T14:01:00.000Z') }));
     const commit = tools.find((tool) => tool.name === 'internet_commit_transfer');
-    expect(await commit?.execute({ proposalId: 'PROP-WAV-300' })).toMatchObject({ status: 'completed' });
-    expect(onCommit).toHaveBeenCalledOnce();
+    const request = buildInternetCommitRequest(state);
+    expect(await commit?.execute(request)).toMatchObject({ status: 'completed', grantId: 'GRT-WAV-300-0915' });
+    expect(onCommit).toHaveBeenCalledWith(request);
+  });
+
+  it('refuses a WebMCP commit when the provider changes approved terms', async () => {
+    const state = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), new Date('2026-08-27T14:00:00.000Z'));
+    const onCommit = vi.fn();
+    const tools = createRelayTools(callbacks({ getState: () => state, onCommit, now: () => new Date('2026-08-27T14:01:00.000Z') }));
+    const commit = tools.find((tool) => tool.name === 'internet_commit_transfer');
+    const changed = { ...buildInternetCommitRequest(state), monthlyCost: 44 };
+
+    expect(await commit?.execute(changed)).toMatchObject({ status: 'denied', reason: 'approved_terms_changed', changedFields: ['monthlyCost'] });
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('consumes a WebMCP approval grant and refuses the second commit', async () => {
+    const commitTime = new Date('2026-08-27T14:02:00.000Z');
+    let state = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), new Date('2026-08-27T14:00:00.000Z'));
+    const tools = createRelayTools(callbacks({
+      getState: () => state,
+      now: () => commitTime,
+      onCommit: (request) => { state = approveInternetTransfer(state, request, commitTime); },
+    }));
+    const commit = tools.find((tool) => tool.name === 'internet_commit_transfer');
+    const request = buildInternetCommitRequest(state);
+
+    expect(await commit?.execute(request)).toMatchObject({ status: 'completed', grantId: 'GRT-WAV-300-0915' });
+    expect(await commit?.execute(request)).toMatchObject({ status: 'denied', reason: 'approval_already_used' });
+    expect(state.receipts.filter((receipt) => receipt.receiptId === 'RCT-WAV-0915')).toHaveLength(1);
   });
 });

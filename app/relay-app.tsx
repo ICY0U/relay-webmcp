@@ -33,7 +33,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { approveInternetTransfer, beginService, completeService, configureMission, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, startMission, type MissionConfig, type RelayService, type RelayState } from '@/lib/relay';
+import { approveInternetTransfer, beginService, buildInternetCommitRequest, completeService, configureMission, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, startMission, type MissionConfig, type RelayService, type RelayState } from '@/lib/relay';
 import { clearRelayState, loadRelayState, persistRelayState, RELAY_STORAGE_KEY } from '@/lib/relay-storage';
 import { useWebMCP } from '@/lib/use-webmcp';
 
@@ -119,7 +119,7 @@ export default function RelayApp() {
       return;
     }
     window.setTimeout(() => {
-      setState((current) => approveInternetTransfer(current));
+      setState((current) => approveInternetTransfer(current, buildInternetCommitRequest(current)));
       setToast('Move complete — 6 verified receipts created');
       window.setTimeout(() => setToast(null), 3400);
     }, 850);
@@ -133,8 +133,8 @@ export default function RelayApp() {
       setState((current) => beginService(startMission(current), serviceId));
     },
     onCompleteService: (serviceId) => setState((current) => completeService(current, serviceId)),
-    onCommit: () => {
-      setState((current) => approveInternetTransfer(current));
+    onCommit: (request) => {
+      setState((current) => approveInternetTransfer(current, request));
       setToast('Agent commit verified — receipt RCT-WAV-0915 created');
       window.setTimeout(() => setToast(null), 3400);
     },
@@ -237,6 +237,8 @@ export default function RelayApp() {
               </div>
             </section>
 
+            <TrustChain state={state} completed={completed} />
+
             <section className="execution-card">
               <header className="section-header">
                 <div><span className="section-kicker"><Network size={13} /> Live coordination</span><h2>Connected services</h2><p>RELAY previews every change, checks your rules, then acts.</p></div>
@@ -291,6 +293,12 @@ export default function RelayApp() {
                   <span><small>Current operation</small><strong>{state.services.find((service) => service.tone === 'running')?.name ?? 'Policy validation'}</strong></span>
                   <em>{completed}/{allowed.length}</em>
                 </div>
+                {state.approvalGrant && !state.approvalGrant.consumedAt && (
+                  <div className="active-grant-card">
+                    <LockKeyhole size={16} />
+                    <span><small>Single-use approval grant</small><strong>{state.approvalGrant.grantId}</strong><em>Wavelength transfer only · expires in 10 minutes</em></span>
+                  </div>
+                )}
                 <div className="mini-progress"><span style={{ width: `${percentage}%` }} /></div>
                 <span className="no-action-note"><LockKeyhole size={12} /> RELAY will pause automatically if your rules require it</span>
               </section>
@@ -314,6 +322,7 @@ export default function RelayApp() {
                 <h2>Everything allowed is done</h2>
                 <p>Six services were updated. Employer details and marketing preferences stayed protected.</p>
                 <div className="latest-receipt"><FileCheck2 size={20} /><span><small>Latest action receipt</small><strong>{state.receipts.at(-1)?.receiptId}</strong><em>{state.receipts.at(-1)?.approvedBy === 'delegation-policy' ? 'Completed within policy' : 'Human approved'} · Wavelength</em></span></div>
+                {state.approvalGrant?.consumedAt && <div className="consumed-grant"><CheckCircle2 size={15} /><span><strong>{state.approvalGrant.grantId}</strong> used once and permanently closed</span></div>}
                 <button className="primary-action" onClick={() => setDrawer('receipts')}>Review action receipts <ArrowRight size={17} /></button>
                 <button className="quiet-action" onClick={resetMission}><RefreshCw size={14} /> Start a new move</button>
               </section>
@@ -354,11 +363,14 @@ export default function RelayApp() {
             <p>Review exactly what will change. This permission cannot be reused for another action.</p>
             <PriceChange expanded />
             <dl className="approval-facts">
+              <div><dt>Provider</dt><dd>Wavelength only</dd></div>
+              <div><dt>Approved action</dt><dd>Internet transfer only</dd></div>
               <div><dt>Move date</dt><dd>{formatDate(state.mission.moveDate)}</dd></div>
               <div><dt>New contract</dt><dd>12 months</dd></div>
-              <div><dt>Permission scope</dt><dd>This transfer only</dd></div>
+              <div><dt>Grant lifetime</dt><dd>10 minutes</dd></div>
+              <div><dt>Reuse</dt><dd>Blocked after one use</dd></div>
             </dl>
-            <div className="approval-explainer"><Info size={16} /><span><strong>What RELAY will do</strong>Approve Fibre 300, schedule the transfer, and create a permanent action receipt.</span></div>
+            <div className="approval-explainer"><Info size={16} /><span><strong>What your approval creates</strong>A grant locked to Wavelength, Fibre 300, £42/month, this move date, and one commit. Changed terms need a new decision.</span></div>
             <form {...{ toolname: 'relay_approve_internet_proposal', tooldescription: 'Present the Wavelength proposal for manual human approval. The agent may fill this form but cannot submit it.' }} onSubmit={handleApprovalSubmit}>
               <input type="hidden" name="proposalId" value="PROP-WAV-300" {...{ toolparamdescription: 'The exact proposal awaiting human approval.' }} />
               <label className="acknowledgement"><input type="checkbox" checked={approvalAcknowledged} onChange={(event) => setApprovalAcknowledged(event.target.checked)} /><span>I understand my bill will increase by <strong>£6 per month</strong>.</span></label>
@@ -431,6 +443,28 @@ function PriceChange({ expanded = false }: { expanded?: boolean }) {
   </div>;
 }
 
+function TrustChain({ state, completed }: { state: RelayState; completed: number }) {
+  const policyChecked = !['draft', 'ready'].includes(state.missionStatus);
+  const allowedDone = completed >= 5;
+  const grantConsumed = Boolean(state.approvalGrant?.consumedAt);
+  const grantActive = Boolean(state.approvalGrant && !state.approvalGrant.consumedAt);
+  const grantNeeded = state.missionStatus === 'waiting_for_human_approval';
+  const nodes = [
+    { label: 'Intent', detail: state.missionStatus === 'draft' ? 'Waiting for plan' : 'Plan captured', tone: state.missionStatus === 'draft' ? 'waiting' : 'done', icon: Sparkles },
+    { label: 'Rules', detail: policyChecked ? 'Policy checked' : 'Ready to check', tone: policyChecked ? 'done' : 'waiting', icon: ShieldCheck },
+    { label: 'Scoped tools', detail: allowedDone ? '5 verified' : `${completed} of 5 verified`, tone: allowedDone ? 'done' : policyChecked ? 'active' : 'waiting', icon: Network },
+    { label: 'Human grant', detail: grantConsumed ? 'Used once' : grantActive ? 'Exact scope active' : grantNeeded ? 'Decision required' : 'Not required yet', tone: grantConsumed ? 'done' : grantActive || grantNeeded ? 'review' : 'waiting', icon: LockKeyhole },
+    { label: 'Receipt', detail: state.missionStatus === 'complete' ? 'Proof recorded' : 'After commit', tone: state.missionStatus === 'complete' ? 'done' : 'waiting', icon: ReceiptText },
+  ];
+
+  return <section className="trust-chain" aria-label="Live trust chain">
+    <header><span><ShieldCheck size={14} /> Live trust chain</span><strong>Intent → rules → scoped action → proof</strong></header>
+    <div className="trust-chain-grid">
+      {nodes.map(({ label, detail, tone, icon: Icon }) => <div className={`trust-node ${tone}`} key={label}><span><Icon size={14} /></span><div><strong>{label}</strong><small>{detail}</small></div></div>)}
+    </div>
+  </section>;
+}
+
 function PanelHeading({ kicker, title, body }: { kicker: string; title: string; body: string }) {
   return <div className="drawer-heading relay-drawer-heading"><span className="section-kicker">{kicker}</span><h2>{title}</h2><p>{body}</p></div>;
 }
@@ -438,6 +472,7 @@ function PanelHeading({ kicker, title, body }: { kicker: string; title: string; 
 function PermissionsPanel({ state }: { state: RelayState }) {
   return <><PanelHeading kicker="Delegation policy" title="You set the boundaries." body="RELAY checks this policy before every tool call and refuses anything outside it." />
     <div className="policy-id"><span>Active policy</span><strong>{POLICY.id}</strong><small>Expires {formatDate(state.mission.moveDate)}, 23:59</small></div>
+    {state.approvalGrant && <section className={`approval-grant-panel ${state.approvalGrant.consumedAt ? 'consumed' : ''}`}><header><LockKeyhole size={16} /><span><small>{state.approvalGrant.consumedAt ? 'Consumed approval grant' : 'Active approval grant'}</small><strong>{state.approvalGrant.grantId}</strong></span></header><dl><div><dt>Provider</dt><dd>Wavelength</dd></div><div><dt>Action</dt><dd>Internet transfer</dd></div><div><dt>Exact terms</dt><dd>Fibre 300 · £42/mo · 12 months</dd></div><div><dt>Status</dt><dd>{state.approvalGrant.consumedAt ? 'Used once · closed' : 'One use · expires in 10 minutes'}</dd></div></dl></section>}
     <PolicyGroup tone="allow" title="Agent may use" items={POLICY.allowed} />
     <PolicyGroup tone="review" title="Always ask me" items={POLICY.approvalRequired} />
     <PolicyGroup tone="deny" title="Never change" items={POLICY.forbidden} />
@@ -450,7 +485,7 @@ function PolicyGroup({ tone, title, items }: { tone: string; title: string; item
 
 function ReceiptsPanel({ state }: { state: RelayState }) {
   return <><PanelHeading kicker="Append-only audit" title={`${state.receipts.length} action receipts`} body="Every external change has a compact, inspectable record." />
-    {state.receipts.length === 0 ? <div className="empty-panel"><ReceiptText size={25} /><strong>No actions yet</strong><p>Start the move plan and verified receipts will appear here in real time.</p></div> : <div className="receipt-list">{[...state.receipts].reverse().map((receipt) => <article className="receipt" key={receipt.receiptId}><div className="receipt-top"><span className="receipt-check"><Check size={12} /></span><span>{receipt.service}</span><code>{receipt.receiptId}</code></div><h3>{receipt.action}</h3><div className="receipt-change"><span>{receipt.before}</span><ArrowRight size={13} /><span>{receipt.after}</span></div><footer><span>{receipt.approvedBy}</span><time>{new Date(receipt.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time></footer></article>)}</div>}
+    {state.receipts.length === 0 ? <div className="empty-panel"><ReceiptText size={25} /><strong>No actions yet</strong><p>Start the move plan and verified receipts will appear here in real time.</p></div> : <div className="receipt-list">{[...state.receipts].reverse().map((receipt) => <article className="receipt" key={receipt.receiptId}><div className="receipt-top"><span className="receipt-check"><Check size={12} /></span><span>{receipt.service}</span><code>{receipt.receiptId}</code></div><h3>{receipt.action}</h3><div className="receipt-change"><span>{receipt.before}</span><ArrowRight size={13} /><span>{receipt.after}</span></div>{receipt.approvalGrantId && <div className="receipt-grant"><LockKeyhole size={13} /><span><small>Human grant consumed</small><strong>{receipt.approvalGrantId}</strong><em>{receipt.approvalScope}</em></span></div>}<footer><span>{receipt.approvedBy}</span><time>{new Date(receipt.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time></footer></article>)}</div>}
   </>;
 }
 

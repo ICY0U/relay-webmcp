@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createRelayTools, type ToolDefinition } from './relay-tools';
-import type { RelayState } from './relay';
+import type { InternetCommitRequest, RelayState } from './relay';
 
 type ModelContext = {
   registerTool: (tool: ToolDefinition) => Promise<void> | void;
@@ -14,7 +14,7 @@ type WebMCPCallbacks = {
   onApprovalRequested: () => void;
   onBeginService: (serviceId: string) => void;
   onCompleteService: (serviceId: string) => void;
-  onCommit: () => void;
+  onCommit: (request: InternetCommitRequest) => void;
   onRunMission: () => Promise<void>;
 };
 
@@ -37,7 +37,7 @@ export function useWebMCP(state: RelayState, callbacks: WebMCPCallbacks) {
       onApprovalRequested: () => callbacksRef.current.onApprovalRequested(),
       onBeginService: (serviceId) => callbacksRef.current.onBeginService(serviceId),
       onCompleteService: (serviceId) => callbacksRef.current.onCompleteService(serviceId),
-      onCommit: () => callbacksRef.current.onCommit(),
+      onCommit: (request) => callbacksRef.current.onCommit(request),
       onRunMission: () => callbacksRef.current.onRunMission(),
     });
     let cancelled = false;

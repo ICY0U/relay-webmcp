@@ -1,6 +1,6 @@
 import { INITIAL_STATE, type RelayState } from './relay';
 
-export const RELAY_STORAGE_KEY = 'relay-demo-ledger-v3';
+export const RELAY_STORAGE_KEY = 'relay-demo-ledger-v4';
 
 export function loadRelayState(): RelayState {
   if (typeof window === 'undefined') return INITIAL_STATE;

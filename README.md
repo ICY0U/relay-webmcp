@@ -17,8 +17,9 @@ The demo proves five ideas:
 1. **Structured delegation** — allowed fields, forbidden changes, spend boundaries, and expiry are explicit and enforced.
 2. **Preview before commit** — risky effects are calculated before any mutation.
 3. **Human approval gates** — the agent can open and prepare an approval, but cannot grant it.
-4. **Action receipts** — every mutation returns a compact, inspectable audit record.
-5. **Visible orchestration** — RELAY contains a complete built-in move coordinator, while real provider-level WebMCP tool calls can also drive the same plan state, activity trace, and receipts.
+4. **Single-use approval grants** — approval is bound to one provider, one action, exact reviewed terms, a ten-minute lifetime, and one use.
+5. **Action receipts** — every mutation returns a compact, inspectable audit record, including the grant consumed for a human-approved action.
+6. **Visible orchestration** — RELAY contains a complete built-in move coordinator, while real provider-level WebMCP tool calls can also drive the same plan state, activity trace, and receipts.
 
 ## Run locally
 
@@ -59,7 +60,7 @@ npm run build
 | `relay_execute_allowed_plan` | Guided fallback | Runs the visible fallback and pauses at the human gate |
 | `internet_preview_transfer` | Read/preview | Exact plan and price effects |
 | `relay_request_human_approval` | UI handoff | Opens the visible human gate; never approves |
-| `internet_commit_transfer` | Mutation | Rejects unless matching approval exists |
+| `internet_commit_transfer` | Mutation | Rejects unless an exact, unexpired, unused approval grant matches every term |
 | `relay_list_receipts` | Read | Compact audit timeline |
 | `relay_get_receipt` | Read | Full structured receipt |
 
@@ -71,6 +72,8 @@ The move-plan page registers twenty-five tools, including provider-level account
 - Input schemas reject unrelated fields and constrain proposal identifiers.
 - Preview and commit are separate operations.
 - Human approval is single-purpose and replay-safe.
+- Approval grants are bound to the provider, mutation, plan, price, contract, move date, and postcode; they expire after ten minutes and are consumed atomically.
+- Changed terms, wrong-provider use, wrong-action use, expired grants, and replay are denied before mutation.
 - Forbidden employer and marketing changes never receive a tool path.
 - Mutations and UI updates share the same domain functions.
 - Unsupported browsers fall back to a complete human-driven demo instead of crashing.

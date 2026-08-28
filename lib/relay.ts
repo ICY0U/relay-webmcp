@@ -41,18 +41,48 @@ export type Receipt = {
   after: string;
   timestamp: string;
   reversibleUntil: string | null;
+  approvalGrantId?: ApprovalGrant['grantId'];
+  approvalScope?: string;
 };
 
 export type ActivityEntry = {
   id: string;
   timestamp: string;
   label: string;
-  kind: 'Policy check' | 'Tool call' | 'Tool result' | 'Human approval';
+  kind: 'Policy check' | 'Tool call' | 'Tool result' | 'Human approval' | 'Approval grant';
 };
+
+export type InternetCommitRequest = {
+  proposalId: 'PROP-WAV-300';
+  providerId: 'wavelength';
+  action: 'internet_commit_transfer';
+  plan: 'Fibre 300';
+  monthlyCost: 42;
+  contractMonths: 12;
+  moveDate: string;
+  postcode: string;
+};
+
+export type ApprovalGrant = {
+  grantId: 'GRT-WAV-300-0915';
+  proposalId: InternetCommitRequest['proposalId'];
+  providerId: InternetCommitRequest['providerId'];
+  action: InternetCommitRequest['action'];
+  terms: Pick<InternetCommitRequest, 'plan' | 'monthlyCost' | 'contractMonths' | 'moveDate' | 'postcode'>;
+  grantedBy: 'David';
+  grantedAt: string;
+  expiresAt: string;
+  consumedAt: string | null;
+};
+
+export type InternetCommitAuthorization =
+  | { status: 'authorized'; grantId: ApprovalGrant['grantId'] }
+  | { status: 'denied'; reason: 'human_approval_required' | 'approval_expired' | 'approval_already_used' | 'wrong_provider' | 'wrong_action' | 'approved_terms_changed'; changedFields?: string[] };
 
 export type RelayState = {
   missionStatus: 'draft' | 'ready' | 'running' | 'waiting_for_human_approval' | 'committing' | 'complete';
   approvalStatus: 'not_requested' | 'required' | 'granted' | 'approved';
+  approvalGrant: ApprovalGrant | null;
   mission: MissionConfig;
   providers: ProviderAccounts;
   services: RelayService[];
@@ -105,6 +135,7 @@ export const INITIAL_SERVICES = createServices(DEFAULT_MISSION);
 export const INITIAL_STATE: RelayState = {
   missionStatus: 'draft',
   approvalStatus: 'not_requested',
+  approvalGrant: null,
   mission: DEFAULT_MISSION,
   providers: INITIAL_PROVIDERS,
   services: INITIAL_SERVICES,
@@ -134,6 +165,7 @@ export function configureMission(state: RelayState, mission: MissionConfig, now 
   return {
     missionStatus: 'ready',
     approvalStatus: 'not_requested',
+    approvalGrant: null,
     mission,
     providers,
     services: createServices(mission),
@@ -216,33 +248,88 @@ export function requestInternetApproval(state: RelayState, now = new Date()): Re
 
 export function grantInternetApproval(state: RelayState, now = new Date()): RelayState {
   if (state.approvalStatus !== 'required') return state;
+  const request = buildInternetCommitRequest(state);
+  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
+  const approvalGrant: ApprovalGrant = {
+    grantId: 'GRT-WAV-300-0915',
+    proposalId: request.proposalId,
+    providerId: request.providerId,
+    action: request.action,
+    terms: {
+      plan: request.plan,
+      monthlyCost: request.monthlyCost,
+      contractMonths: request.contractMonths,
+      moveDate: request.moveDate,
+      postcode: request.postcode,
+    },
+    grantedBy: 'David',
+    grantedAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    consumedAt: null,
+  };
   return {
     ...state,
     missionStatus: 'committing',
     approvalStatus: 'granted',
+    approvalGrant,
     services: state.services.map((service) => service.id === 'wavelength' ? { ...service, status: 'Approval granted', tone: 'running' } : service),
-    activity: [activity('wavelength-approved', 'David granted one-time approval for PROP-WAV-300', 'Human approval', now), ...state.activity],
+    activity: [
+      activity('wavelength-grant', `${approvalGrant.grantId} issued for Wavelength transfer only · expires in 10 minutes`, 'Approval grant', now),
+      activity('wavelength-approved', 'David approved the exact terms for PROP-WAV-300', 'Human approval', now),
+      ...state.activity,
+    ],
   };
 }
 
-export function approveInternetTransfer(state: RelayState, now = new Date()): RelayState {
-  if (state.approvalStatus === 'approved') return state;
-  if (state.approvalStatus !== 'granted' && state.approvalStatus !== 'required') return state;
-  return completeInternetTransfer(state, 'David · explicit approval', now);
+export function buildInternetCommitRequest(state: RelayState): InternetCommitRequest {
+  return {
+    proposalId: 'PROP-WAV-300',
+    providerId: 'wavelength',
+    action: 'internet_commit_transfer',
+    plan: 'Fibre 300',
+    monthlyCost: 42,
+    contractMonths: 12,
+    moveDate: state.mission.moveDate,
+    postcode: state.mission.postcode,
+  };
 }
 
-function completeInternetTransfer(state: RelayState, approvedBy: string, now: Date): RelayState {
+export function getInternetCommitAuthorization(state: RelayState, request: InternetCommitRequest, now = new Date()): InternetCommitAuthorization {
+  const grant = state.approvalGrant;
+  if (!grant) return { status: 'denied', reason: 'human_approval_required' };
+  if (grant.consumedAt || state.approvalStatus === 'approved') return { status: 'denied', reason: 'approval_already_used' };
+  if (now.getTime() >= new Date(grant.expiresAt).getTime()) return { status: 'denied', reason: 'approval_expired' };
+  if (request.providerId !== grant.providerId) return { status: 'denied', reason: 'wrong_provider' };
+  if (request.action !== grant.action) return { status: 'denied', reason: 'wrong_action' };
+
+  const expected = { proposalId: grant.proposalId, ...grant.terms };
+  const changedFields = (Object.keys(expected) as Array<keyof typeof expected>).filter((key) => request[key] !== expected[key]);
+  if (changedFields.length) return { status: 'denied', reason: 'approved_terms_changed', changedFields };
+  return { status: 'authorized', grantId: grant.grantId };
+}
+
+export function approveInternetTransfer(state: RelayState, request = buildInternetCommitRequest(state), now = new Date()): RelayState {
+  if (state.approvalStatus === 'approved') return state;
+  if (state.approvalStatus !== 'granted') return state;
+  const authorization = getInternetCommitAuthorization(state, request, now);
+  if (authorization.status !== 'authorized') return state;
+  return completeInternetTransfer(state, 'David · explicit approval', now, authorization.grantId);
+}
+
+function completeInternetTransfer(state: RelayState, approvedBy: string, now: Date, approvalGrantId?: ApprovalGrant['grantId']): RelayState {
   const receipt: Receipt = {
     receiptId: 'RCT-WAV-0915',
     service: 'Wavelength', action: 'Internet transfer approved', status: 'completed',
     approvedBy, policyId: POLICY.id,
     before: `${state.providers.wavelength.plan} · £${state.providers.wavelength.monthlyCost}/mo`, after: 'Fibre 300 · £42/mo',
     timestamp: now.toISOString(), reversibleUntil: null,
+    ...(approvalGrantId ? { approvalGrantId, approvalScope: 'Wavelength · internet_commit_transfer · PROP-WAV-300 · one use' } : {}),
   };
   return {
     ...state,
     missionStatus: 'complete',
     approvalStatus: 'approved',
+    approvalGrant: state.approvalGrant ? { ...state.approvalGrant, consumedAt: now.toISOString() } : null,
     providers: {
       ...state.providers,
       wavelength: { ...state.providers.wavelength, serviceAddress: state.mission.newAddress, plan: 'Fibre 300', monthlyCost: 42, moveDate: state.mission.moveDate },
@@ -251,7 +338,11 @@ function completeInternetTransfer(state: RelayState, approvedBy: string, now: Da
       ? { ...service, status: 'Complete', tone: 'done', summary: `Fibre 300 transfer approved for ${formatMoveDate(state.mission.moveDate)}.` }
       : service),
     receipts: [...state.receipts, receipt],
-    activity: [activity('wavelength-result', approvedBy === 'delegation-policy' ? `Wavelength completed within the £${state.mission.approvalThreshold}/mo threshold and returned ${receipt.receiptId}` : `Wavelength completed after explicit approval and returned ${receipt.receiptId}`, 'Tool result', now), ...state.activity],
+    activity: [
+      ...(approvalGrantId ? [activity('wavelength-grant-consumed', `${approvalGrantId} consumed once and permanently closed`, 'Approval grant', now)] : []),
+      activity('wavelength-result', approvedBy === 'delegation-policy' ? `Wavelength completed within the £${state.mission.approvalThreshold}/mo threshold and returned ${receipt.receiptId}` : `Wavelength completed after explicit approval and returned ${receipt.receiptId}`, 'Tool result', now),
+      ...state.activity,
+    ],
   };
 }
 
@@ -265,6 +356,14 @@ export function getMissionSnapshot(state: RelayState) {
     completed,
     totalAllowed: allowedServices.length,
     approvalStatus: state.approvalStatus,
+    approvalGrant: state.approvalGrant ? {
+      grantId: state.approvalGrant.grantId,
+      providerId: state.approvalGrant.providerId,
+      action: state.approvalGrant.action,
+      terms: state.approvalGrant.terms,
+      expiresAt: state.approvalGrant.expiresAt,
+      consumedAt: state.approvalGrant.consumedAt,
+    } : null,
     moveDetails: state.mission,
     services: state.services.map(({ id, name, status }) => ({ id, name, status })),
   };

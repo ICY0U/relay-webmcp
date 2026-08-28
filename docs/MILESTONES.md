@@ -78,3 +78,17 @@ npm run build
 Then run the demo path in both ChatGPT’s in-app browser and WebMCP-enabled Chrome. Record the tool panel and visible approval in the final video.
 
 Pass condition: all commands succeed, no browser console warnings/errors occur, the live URL loads, and the public video is under three minutes.
+
+## Milestone 6 — Exact human delegation grants
+
+Delivered: a judge-visible trust chain and a real single-use approval grant tied to Wavelength, `internet_commit_transfer`, Fibre 300, £42/month, a 12-month contract, the configured move date and postcode, a ten-minute expiry, and one permitted use. The consumed grant is preserved on the receipt and in the activity trace.
+
+Test:
+
+1. Reach the Wavelength approval gate and open the human decision.
+2. Confirm the provider, action, price, contract, move date, lifetime, and no-reuse rule are visible before approval.
+3. Approve and verify `GRT-WAV-300-0915` appears while the commit is pending.
+4. Complete the transfer and confirm the grant is marked used once and permanently closed.
+5. Attempt changed-price, wrong-provider, wrong-action, expired, and replayed commits through the test suite.
+
+Pass condition: only the exact reviewed action can consume the grant, it can be consumed once, and the UI, tool result, activity trace, and receipt agree.
