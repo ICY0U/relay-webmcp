@@ -107,6 +107,20 @@ export type RelayState = {
   activity: ActivityEntry[];
 };
 
+export type ShowcaseStepId = 'boundaries' | 'coordinate' | 'approve' | 'proof';
+
+export type ShowcaseGuide = {
+  currentStepId: ShowcaseStepId;
+  completedSteps: number;
+  steps: Array<{
+    id: ShowcaseStepId;
+    label: string;
+    description: string;
+    timing: string;
+    status: 'complete' | 'current' | 'upcoming';
+  }>;
+};
+
 export const POLICY = {
   id: 'POL-MOVE-0915',
   title: 'Moving home delegation',
@@ -124,6 +138,29 @@ export const DEFAULT_MISSION: MissionConfig = {
   forwardingMonths: 6,
   approvalThreshold: 0,
 };
+
+export function getShowcaseGuide(state: RelayState): ShowcaseGuide {
+  const currentStepId: ShowcaseStepId = state.missionStatus === 'draft'
+    ? 'boundaries'
+    : ['ready', 'running'].includes(state.missionStatus)
+      ? 'coordinate'
+      : state.missionStatus === 'waiting_for_human_approval'
+        ? 'approve'
+        : 'proof';
+  const definitions: Array<Omit<ShowcaseGuide['steps'][number], 'status'>> = [
+    { id: 'boundaries', label: 'Set the boundaries', description: 'One move, six allowed services, protected employer and marketing data.', timing: '0:00–0:35' },
+    { id: 'coordinate', label: 'Watch structured actions', description: 'Preview and commit tools update real fictional provider accounts in order.', timing: '0:35–1:35' },
+    { id: 'approve', label: 'Make the human decision', description: 'RELAY pauses before the £6 monthly increase and creates an exact one-use grant.', timing: '1:35–2:10' },
+    { id: 'proof', label: 'Inspect the proof', description: 'Receipts prove allowed changes; safety challenges prove unsafe requests were refused.', timing: '2:10–3:00' },
+  ];
+  const currentIndex = definitions.findIndex((step) => step.id === currentStepId);
+  const proofComplete = state.missionStatus === 'complete' && state.receipts.length === 6 && state.refusals.length > 0;
+  const steps = definitions.map((step, index) => ({
+    ...step,
+    status: (index < currentIndex || (step.id === 'proof' && proofComplete) ? 'complete' : index === currentIndex ? 'current' : 'upcoming') as ShowcaseGuide['steps'][number]['status'],
+  }));
+  return { currentStepId, completedSteps: steps.filter((step) => step.status === 'complete').length, steps };
+}
 
 export const INITIAL_PROVIDERS: ProviderAccounts = {
   civic: { accountId: 'CT-1842-77', registeredAddress: DEFAULT_MISSION.currentAddress, lastUpdated: null },

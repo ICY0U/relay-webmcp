@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleAlert,
+  Clock3,
   Droplets,
   ExternalLink,
   FileCheck2,
@@ -34,11 +35,11 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { approveInternetTransfer, beginService, buildInternetCommitRequest, completeService, configureMission, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, runSafetyChallenge, startMission, type MissionConfig, type RelayService, type RelayState, type SafetyChallengeId } from '@/lib/relay';
+import { approveInternetTransfer, beginService, buildInternetCommitRequest, completeService, configureMission, getShowcaseGuide, grantInternetApproval, INITIAL_STATE, POLICY, requestInternetApproval, runSafetyChallenge, startMission, type MissionConfig, type RelayService, type RelayState, type SafetyChallengeId } from '@/lib/relay';
 import { clearRelayState, loadRelayState, persistRelayState, RELAY_STORAGE_KEY } from '@/lib/relay-storage';
 import { useWebMCP } from '@/lib/use-webmcp';
 
-type Drawer = 'permissions' | 'receipts' | 'activity' | 'safety' | 'service' | null;
+type Drawer = 'guide' | 'permissions' | 'receipts' | 'activity' | 'safety' | 'service' | null;
 
 const navItems = [
   { id: null, label: 'Move plan', icon: Home },
@@ -83,6 +84,16 @@ export default function RelayApp() {
   useEffect(() => {
     if (hydrated) persistRelayState(state);
   }, [hydrated, state]);
+
+  useEffect(() => {
+    function closeOverlay(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setDrawer(null);
+      setApprovalOpen(false);
+    }
+    window.addEventListener('keydown', closeOverlay);
+    return () => window.removeEventListener('keydown', closeOverlay);
+  }, []);
 
   const runMission = useCallback(async () => {
     const token = ++runToken.current;
@@ -216,6 +227,10 @@ export default function RelayApp() {
             <h1>Your move</h1>
           </div>
           <div className="topbar-tools">
+            <button className="showcase-chip" onClick={() => setDrawer('guide')} aria-label="Open three-minute showcase guide">
+              <Clock3 size={14} />
+              <span>3-minute guide</span>
+            </button>
             <span className={`mcp-chip ${webmcp.supported ? 'live' : ''}`} title={webmcp.supported ? `${webmcp.registeredCount} tools registered` : 'Human demo mode remains fully available'}>
               <RadioTower size={14} />
               <span>{webmcp.supported ? `${webmcp.registeredCount} tools live` : 'Demo mode'}</span>
@@ -241,7 +256,7 @@ export default function RelayApp() {
               </button>
               <div className="hero-progress-row">
                 <div className="progress-copy"><strong>{completed} of {allowed.length}</strong><span>allowed actions complete</span></div>
-                <div className="progress-track" aria-label={`${percentage} percent complete`}><span style={{ width: `${percentage}%` }} /></div>
+                <div className="progress-track" role="progressbar" aria-label="Allowed move actions completed" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percentage}><span style={{ width: `${percentage}%` }} /></div>
                 <strong className="progress-percent">{percentage}%</strong>
               </div>
             </section>
@@ -352,8 +367,9 @@ export default function RelayApp() {
 
       {drawer && (
         <div className="drawer-backdrop" onMouseDown={() => setDrawer(null)}>
-          <aside className="drawer relay-drawer" aria-modal="true" role="dialog" onMouseDown={(event) => event.stopPropagation()}>
+          <aside className="drawer relay-drawer" aria-modal="true" role="dialog" aria-label={drawer === 'guide' ? 'Three-minute showcase guide' : drawer === 'permissions' ? 'Approval permissions' : drawer === 'receipts' ? 'Action receipts' : drawer === 'activity' ? 'Live activity' : drawer === 'safety' ? 'Safety proof' : selectedService?.name ?? 'Service details'} onMouseDown={(event) => event.stopPropagation()}>
             <button className="drawer-close" onClick={() => setDrawer(null)} aria-label="Close panel"><X size={18} /></button>
+            {drawer === 'guide' && <ShowcaseGuidePanel state={state} onClose={() => setDrawer(null)} onStart={() => { setDrawer(null); runMission(); }} onApproval={() => { setDrawer(null); setApprovalOpen(true); }} onReceipts={() => setDrawer('receipts')} onSafety={() => setDrawer('safety')} />}
             {drawer === 'permissions' && <PermissionsPanel state={state} />}
             {drawer === 'receipts' && <ReceiptsPanel state={state} />}
             {drawer === 'activity' && <ActivityPanel activity={state.activity} webmcp={webmcp} />}
@@ -481,6 +497,31 @@ function TrustChain({ state, completed }: { state: RelayState; completed: number
 
 function PanelHeading({ kicker, title, body }: { kicker: string; title: string; body: string }) {
   return <div className="drawer-heading relay-drawer-heading"><span className="section-kicker">{kicker}</span><h2>{title}</h2><p>{body}</p></div>;
+}
+
+function ShowcaseGuidePanel({ state, onClose, onStart, onApproval, onReceipts, onSafety }: { state: RelayState; onClose: () => void; onStart: () => void; onApproval: () => void; onReceipts: () => void; onSafety: () => void }) {
+  const guide = getShowcaseGuide(state);
+  const isBusy = ['running', 'committing'].includes(state.missionStatus);
+  const primary = state.missionStatus === 'draft'
+    ? { label: 'Continue with move setup', action: onClose }
+    : state.missionStatus === 'ready'
+      ? { label: 'Start coordination', action: onStart }
+      : state.missionStatus === 'waiting_for_human_approval'
+        ? { label: 'Review human decision', action: onApproval }
+        : state.missionStatus === 'complete'
+          ? { label: 'Open action receipts', action: onReceipts }
+          : { label: state.missionStatus === 'committing' ? 'Creating final receipt' : 'RELAY is coordinating', action: onClose };
+  return <>
+    <PanelHeading kicker="Guided showcase" title="Tell the whole story in three minutes." body="A contained, prompt-free path through delegated action, human control, and verifiable safety." />
+    <div className="showcase-progress"><Clock3 size={18} /><div><strong>{guide.completedSteps} of 4 acts complete</strong><span>Target runtime · under three minutes</span></div></div>
+    <div className="showcase-steps">{guide.steps.map((step, index) => <article className={`showcase-step ${step.status}`} key={step.id}>
+      <span className="showcase-step-marker">{step.status === 'complete' ? <Check size={14} /> : step.status === 'current' ? <Play size={12} fill="currentColor" /> : index + 1}</span>
+      <div><header><strong>{step.label}</strong><code>{step.timing}</code></header><p>{step.description}</p></div>
+    </article>)}</div>
+    <button className="primary-action showcase-primary" onClick={primary.action} disabled={isBusy}>{isBusy ? <LoaderCircle className="spin" size={15} /> : <ArrowRight size={15} />} {primary.label}</button>
+    <button className="quiet-action" onClick={onSafety}><ShieldAlert size={14} /> Open live safety proof</button>
+    <span className="showcase-footnote"><Bot size={13} /> No copied prompts or external tabs required.</span>
+  </>;
 }
 
 function PermissionsPanel({ state }: { state: RelayState }) {

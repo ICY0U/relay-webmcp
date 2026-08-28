@@ -107,3 +107,18 @@ Test:
 6. Invoke `relay_run_safety_challenge` through WebMCP and inspect the same visible proof with `relay_get_safety_proof`.
 
 Pass condition: all five unsafe requests are rejected by the same domain enforcement used by real commits, no challenge mutates a provider or creates a success receipt, and the normal demo path still completes.
+
+## Milestone 8 — Guided showcase and accessibility
+
+Delivered: a compact **3-minute guide** in the first viewport, a four-act state-aware walkthrough, direct handoffs to the next valid action, an always-available safety-proof handoff, named dialogs, Escape dismissal, and semantic mission progress.
+
+Test:
+
+1. Open **3-minute guide** from a fresh move plan and confirm **Set the boundaries** is the current act.
+2. Review the move plan, reopen the guide, and confirm **Watch structured actions** is current with a working **Start coordination** action.
+3. At the Wavelength pause, confirm the guide advances to **Make the human decision** and opens the exact approval modal.
+4. Complete the move and confirm **Inspect the proof** is current with three of four acts complete.
+5. Run one real safety challenge and confirm the guide reaches four of four without adding a success receipt.
+6. Press Escape from a guide, safety, permission, receipt, or service drawer and confirm it closes.
+
+Pass condition: the guide always reflects real state, never skips policy enforcement, completes the normal demo path, and supports keyboard dismissal.

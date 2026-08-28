@@ -9,6 +9,7 @@ import {
   getMissionSnapshot,
   getInternetCommitAuthorization,
   getServiceStartAuthorization,
+  getShowcaseGuide,
   grantInternetApproval,
   INITIAL_STATE,
   requestInternetApproval,
@@ -34,6 +35,22 @@ function callbacks(overrides: Partial<RelayToolCallbacks> = {}): RelayToolCallba
 }
 
 describe('RELAY delegation state', () => {
+  it('maps every mission state to one clear showcase step', () => {
+    expect(getShowcaseGuide(INITIAL_STATE).currentStepId).toBe('boundaries');
+    expect(getShowcaseGuide(READY_STATE).currentStepId).toBe('coordinate');
+    expect(getShowcaseGuide({ ...READY_STATE, missionStatus: 'running' }).currentStepId).toBe('coordinate');
+    expect(getShowcaseGuide({ ...READY_STATE, missionStatus: 'waiting_for_human_approval' }).currentStepId).toBe('approve');
+    expect(getShowcaseGuide({ ...READY_STATE, missionStatus: 'complete' }).currentStepId).toBe('proof');
+  });
+
+  it('reports showcase progress without treating safety refusals as successful actions', () => {
+    const proof = runSafetyChallenge({ ...READY_STATE, missionStatus: 'complete' }, 'changed_terms');
+    const guide = getShowcaseGuide(proof);
+    expect(guide.completedSteps).toBe(3);
+    expect(guide.steps.find((step) => step.id === 'proof')?.status).toBe('current');
+    expect(proof.receipts).toHaveLength(0);
+  });
+
   it('turns an editable draft into a runnable move plan with no pre-created receipts', () => {
     expect(getMissionSnapshot(INITIAL_STATE).status).toBe('draft');
     const snapshot = getMissionSnapshot(READY_STATE);

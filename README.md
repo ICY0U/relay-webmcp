@@ -41,6 +41,8 @@ npm run build
 
 ## Three-minute demo path
 
+Open **3-minute guide** at any point for a live four-act walkthrough that follows the current move state and keeps the entire showcase inside RELAY.
+
 1. Configure the current address, destination, move date, forwarding period, and monthly-price approval threshold.
 2. Press **Review move plan**, explain the generated instruction and approval rules, then press **Start move plan** without leaving RELAY.
 3. Show Civic, Northstar, Clearflow, Postway, and Haven execute in sequence; each action changes the visible plan and creates a receipt.
@@ -82,6 +84,8 @@ The move-plan page registers twenty-seven tools, including provider-level accoun
 - Controlled safety challenges reuse the production policy functions and create separate refusal proof with `providerStateChanged: false`.
 - Mutations and UI updates share the same domain functions.
 - Unsupported browsers fall back to a complete human-driven demo instead of crashing.
+- The guided showcase follows the real mission state, can launch the next valid action, and never substitutes scripted success data.
+- Drawers have accessible names, Escape closes overlays, and mission progress exposes progressbar semantics.
 - All providers, account data, people, addresses, and transactions are fictional.
 
 ## Project structure

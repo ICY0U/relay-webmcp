@@ -6,7 +6,7 @@ Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 
 ## Automated
 
-- `npm test`: 24/24 passed.
+- `npm test`: 26/26 passed.
 - `npm run lint`: passed with zero warnings or errors.
 - `npm run build`: production build passed for `/` and `/providers/:provider`.
 - `npm audit --omit=dev`: zero production vulnerabilities.
@@ -39,6 +39,9 @@ The Day 2 safety suite covers protected-data refusal without mutation, changed/e
 - The production build's **Safety proof** panel was visually inspected with all five challenge cards, stable denial IDs, enforcing rules, and no-provider-change proof.
 - All five controlled challenges reached **5 of 5 challenges proven** while the success receipt count remained zero.
 - After all five challenges, the normal built-in runner still reached the 83% human gate, accepted the exact single-use approval, and completed all six allowed provider changes.
+- The four-act **3-minute guide** advanced from boundaries → coordination → human decision → proof using real mission state and launched each next valid action.
+- Completing one safety challenge after six successful provider changes advanced the guide to four of four while preserving refusal and success evidence as separate record types.
+- The guide and other drawers expose accessible dialog names; Escape dismissal and semantic mission progress were exercised in the browser.
 
 ## Remaining judge-environment check
 
