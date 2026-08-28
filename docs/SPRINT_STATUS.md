@@ -56,11 +56,22 @@ Status: reliability checkpoint passed; one manual browser-setting check remains.
 
 ## Next autonomous checkpoint — Day 5 submission package
 
-1. Draft final Devpost story, built-with list, challenge explanation, and testing notes from verified behavior.
-2. Create the under-three-minute narration and shot list around the new guided showcase.
-3. Capture clean hero, human-gate, safety-proof, and receipt screenshots.
-4. Prepare the architecture visual and final repository checklist.
-5. Leave the manual Chrome flag check clearly separated from autonomous work.
+Status: autonomous evidence package complete; official field-by-field draft awaits local Devpost workflow initialization.
+
+- Created a 2:55 narration and shot script around the real guided showcase.
+- Created a five-frame screenshot plan with exact states, filenames, and proof requirements.
+- Created a polished 1600 × 900 architecture visual covering intent, policy, twenty-seven WebMCP tools, the human checkpoint, receipts, and refusal proof.
+- Added the architecture visual and evidence links to the repository README.
+- Kept the manual Chrome flag check clearly separated from verified autonomous work.
+- The official `prepare-submission` workflow correctly paused because `.devpost-hackathon-state.json` does not exist. Run the local start/review flow before generating `devpost-submission.md`; nothing has been sent to Devpost.
+
+## Next checkpoint — Day 6 release and participant handoff
+
+1. Initialize the local Devpost workflow and confirm current official requirements.
+2. Enable Chrome's WebMCP testing flag, relaunch, and capture **27 tools live**.
+3. Capture the five planned screenshots and record the public under-three-minute video.
+4. Publish a public repository after a committed-secret scan.
+5. Run final readiness checks, obtain explicit submission confirmation, submit early, and verify the public project page.
 
 ## Later checkpoints
 

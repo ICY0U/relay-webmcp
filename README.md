@@ -22,6 +22,8 @@ The demo proves seven ideas:
 6. **Visible orchestration** — RELAY contains a complete built-in move coordinator, while real provider-level WebMCP tool calls can also drive the same plan state, activity trace, and receipts.
 7. **Executable safety proof** — judges can run five controlled adversarial requests through the real policy seam and inspect refusal records that prove provider state did not change.
 
+![RELAY architecture](public/relay-architecture.svg)
+
 ## Run locally
 
 Requirements: Node.js 22.13 or newer.
@@ -105,6 +107,8 @@ docs/TEST_EVIDENCE.md             latest verification record
 ## Competition readiness
 
 The official rules require a live URL, a public licensed source repository, a clear implementation description, and a public YouTube demo under three minutes. Before submission, enable the production WebMCP browser flag, record the golden path plus at least one denial, publish the repository publicly, and freeze/tag the submitted revision.
+
+Use [the timed demo script](docs/DEMO_SCRIPT.md), [submission asset plan](docs/SUBMISSION_ASSET_PLAN.md), and [ten-run reliability matrix](docs/RELIABILITY_MATRIX.md) for the final recording and evidence package.
 
 ## License
 
