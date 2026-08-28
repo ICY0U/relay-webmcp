@@ -20,7 +20,7 @@ Status: complete and deployed as Sites version 9.
 
 ## Day 2 — Executable safety proof
 
-Status: implementation, automated verification, and production-build browser verification complete; publishing next.
+Status: complete and deployed as Sites version 10.
 
 - Added a compact judge-facing **Safety proof** panel and navigation badge.
 - Added protected-data, changed-terms, expired-grant, replayed-grant, and out-of-order controlled challenges.
@@ -30,6 +30,7 @@ Status: implementation, automated verification, and production-build browser ver
 - Storage ledger moved to v5 for refusal records.
 - Automated tests: 24 passing; lint and production build passing.
 - Production build browser check: five of five challenges proven, zero success receipts, then the complete move path passed through the human gate to 100%.
+- Private production deployment succeeded at the stable RELAY live URL and the safety panel was rechecked after publish.
 
 ## Next checkpoint — Day 3 showcase polish
 
