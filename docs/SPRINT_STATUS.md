@@ -67,11 +67,18 @@ Status: autonomous evidence package complete; official field-by-field draft awai
 
 ## Next checkpoint — Day 6 release and participant handoff
 
-1. Initialize the local Devpost workflow and confirm current official requirements.
-2. Enable Chrome's WebMCP testing flag, relaunch, and capture **27 tools live**.
-3. Capture the five planned screenshots and record the public under-three-minute video.
-4. Publish a public repository after a committed-secret scan.
-5. Run final readiness checks, obtain explicit submission confirmation, submit early, and verify the public project page.
+Status: every safe autonomous release check is complete; participant-controlled publication and submission actions remain.
+
+- Final test, lint, production-build, and production-audit checks passed.
+- Tracked-file scan found no secret or credential candidates.
+- Confirmed the current Git remote is the private Sites source remote, not a public competition repository.
+- Confirmed the stable Sites access policy remains owner-only with no external visitors or groups.
+- Created `docs/FINAL_RELEASE_CHECKLIST.md` with verified passes, stop-ship conditions, exact remaining actions, and the recommended release sequence.
+- Did not make the source or demo public, change Chrome settings, agree to event terms, upload a video, or submit on the user's behalf.
+
+## Sprint completion boundary
+
+The product build, reliability proof, guided showcase, demo script, architecture visual, and autonomous release audit are complete. The remaining work requires participant authority or participant-created assets: initialize/acknowledge the Devpost flow, enable the Chrome flag, capture and upload media, choose public access, publish the repository, and explicitly approve final submission.
 
 ## Later checkpoints
 
