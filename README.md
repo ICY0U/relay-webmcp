@@ -106,9 +106,9 @@ docs/TEST_EVIDENCE.md             latest verification record
 
 ## Competition readiness
 
-The official rules require a live URL, a public licensed source repository, a clear implementation description, and a public YouTube demo under three minutes. Before submission, enable the production WebMCP browser flag, record the golden path plus at least one denial, publish the repository publicly, and freeze/tag the submitted revision.
+The production release has been verified in ChatGPT's WebMCP-capable in-app browser with **27 tools live**. The final evidence package includes five 1600 × 900 screenshots, a 2:46 narrated product demonstration, the field-by-field Devpost draft, 29 automated tests, and ten tool-driven plus ten visible-interface rehearsals.
 
-Use [the timed demo script](docs/DEMO_SCRIPT.md), [submission asset plan](docs/SUBMISSION_ASSET_PLAN.md), and [ten-run reliability matrix](docs/RELIABILITY_MATRIX.md) for the final recording and evidence package.
+The remaining publication steps are to make the Sites deployment public, publish this licensed source revision to a public repository, upload the finished video to YouTube, confirm the personal form declarations, and run the final explicit submission workflow. See [the submission draft](devpost-submission.md), [submission asset plan](docs/SUBMISSION_ASSET_PLAN.md), and [release checklist](docs/FINAL_RELEASE_CHECKLIST.md).
 
 ## License
 

@@ -48,12 +48,9 @@ The latest judge-evidence checkpoint verifies that provider transitions record t
 - Ten consecutive production-build UI rehearsals each completed draft → review → five safe actions → human gate → exact approval → sixth receipt → reset.
 - Runtime logs after the ten UI rehearsals contained zero warnings and zero errors; the connected Chrome check also loaded without warnings or errors.
 
-## Judge-browser status
+## WebMCP browser status
 
-- A connected Chrome browser loaded the production build successfully, but reported **Demo mode**, confirming `document.modelContext` is not enabled in that browser profile yet.
-- Browser automation is not permitted to open or modify the protected `chrome://flags` page. The remaining manual check is to enable **WebMCP for testing** in the recording profile, relaunch Chrome, and confirm **27 tools live** before the final recording.
-- Until that manual browser setting is enabled, tool behavior is verified through the exact registered tool definitions and callbacks rather than claiming an official browser-registration pass.
-
-## Remaining judge-environment check
-
-The ordinary in-app preview does not expose the experimental WebMCP browser API, so the UI correctly reported safe local mode. Before recording the entry, repeat the imperative tool invocations in Chrome 149+ with the WebMCP testing flag or a judge-compatible ChatGPT browser and capture the DevTools WebMCP panel.
+- The production URL was opened in ChatGPT's WebMCP-capable in-app browser and reported **27 tools live**.
+- The final demonstration was captured from that release and visibly retains the **27 tools live** status.
+- The exact registered tool definitions, callbacks, policy enforcement, and state synchronization remain covered by the automated suite and isolated tool rehearsals above.
+- A separate Chrome flag check is optional rather than a release blocker because the official event accepts ChatGPT's in-app browser as a supported WebMCP client.

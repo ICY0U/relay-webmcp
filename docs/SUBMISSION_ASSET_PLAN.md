@@ -36,10 +36,12 @@ Capture these from the stable live URL after resetting the demo. Use 1600 × 900
 - `docs/DEMO_SCRIPT.md` — final under-three-minute narration and shot timing.
 - `public/relay-architecture.svg` — architecture visual.
 
-## Still required from the participant
+## Final publication actions
 
-- Enable Chrome's **WebMCP for testing** flag, relaunch, and confirm **27 tools live**.
-- Capture the five named screenshots.
-- Record and upload the final public video.
-- Choose and publish a public source repository after a committed-secret scan.
-- Initialize the local Devpost workflow before generating the official field-by-field draft.
+- The five named screenshots are complete in `artifacts/submission-screenshots/`.
+- The 2:46 narrated video master is complete in `artifacts/demo-video-v2/`.
+- ChatGPT's in-app browser confirmed **27 tools live** on the production release.
+- Upload the finished video to YouTube and add its publicly viewable URL.
+- Choose and publish a public source repository after the completed secret scan.
+- Make the Sites deployment public and confirm it works without the owner's session.
+- Confirm the personal declarations and public URLs in `devpost-submission.md`.

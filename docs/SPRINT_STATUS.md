@@ -45,25 +45,25 @@ Status: complete; feature freeze begins after this checkpoint is published.
 
 ## Next checkpoint — Day 4 judge-browser verification
 
-Status: reliability checkpoint passed; one manual browser-setting check remains.
+Status: reliability checkpoint passed; later superseded by the successful ChatGPT in-app browser registration check.
 
 - Added a ten-run isolated tool-definition rehearsal: all ten completed with six unique receipts and one consumed grant.
 - Ran ten consecutive production-build UI rehearsals: all ten reached the human gate, completed, and reset successfully.
 - Browser runtime logs after the rehearsals: zero warnings and zero errors.
-- Connected Chrome loaded RELAY successfully with zero warnings or errors, but currently reports **Demo mode** because the WebMCP testing flag is not enabled in that profile.
-- The protected browser-settings URL cannot be changed through automation, so the final official registration check requires the user to enable the WebMCP testing flag and relaunch Chrome.
+- Connected Chrome loaded RELAY successfully with zero warnings or errors but reported **Demo mode** because that profile did not have the optional testing flag.
+- The later ChatGPT in-app browser check reported **27 tools live**, satisfying the event's supported-client requirement without changing Chrome settings.
 - Feature implementation is frozen unless a reliability or accessibility defect is found.
 
 ## Next autonomous checkpoint — Day 5 submission package
 
-Status: autonomous evidence package complete; official field-by-field draft awaits local Devpost workflow initialization.
+Status: complete; the field-by-field draft was added during submission preparation on 29 August 2026.
 
 - Created a 2:55 narration and shot script around the real guided showcase.
 - Created a five-frame screenshot plan with exact states, filenames, and proof requirements.
 - Created a polished 1600 × 900 architecture visual covering intent, policy, twenty-seven WebMCP tools, the human checkpoint, receipts, and refusal proof.
 - Added the architecture visual and evidence links to the repository README.
 - Kept the manual Chrome flag check clearly separated from verified autonomous work.
-- The official `prepare-submission` workflow correctly paused because `.devpost-hackathon-state.json` does not exist. Run the local start/review flow before generating `devpost-submission.md`; nothing has been sent to Devpost.
+- The official workflow was initialized, the rules were acknowledged, and `devpost-submission.md` now contains the field-by-field draft.
 
 ## Next checkpoint — Day 6 release and participant handoff
 
@@ -78,7 +78,18 @@ Status: every safe autonomous release check is complete; participant-controlled 
 
 ## Sprint completion boundary
 
-The product build, reliability proof, guided showcase, demo script, architecture visual, and autonomous release audit are complete. The remaining work requires participant authority or participant-created assets: initialize/acknowledge the Devpost flow, enable the Chrome flag, capture and upload media, choose public access, publish the repository, and explicitly approve final submission.
+The product build, reliability proof, guided showcase, screenshot set, demonstration master, architecture visual, release audit, and Devpost draft are complete. The remaining work requires participant authority or external publication: choose public Sites access, publish the repository, upload the video to YouTube, confirm personal declarations, and explicitly approve final submission.
+
+## Submission preparation update — 29 August 2026
+
+- Devpost authentication and WebMCP Challenge registration confirmed.
+- Official rules acknowledged and local workflow state initialized.
+- ChatGPT's in-app browser confirmed **27 tools live**; a Chrome flag change is no longer a required release gate.
+- Five final 1600 × 900 gallery screenshots organized in `artifacts/submission-screenshots/`.
+- Revised 2:46 narrated demonstration completed and verified.
+- Official field-by-field draft created at `devpost-submission.md`.
+- Fresh release checks passed: 29 tests, lint, production build, zero production vulnerabilities, and no secret-pattern or `.env` files.
+- Remaining external actions: publish the repository, make the Sites URL public, upload the video to YouTube, confirm personal form declarations, and explicitly authorize final submission.
 
 ## Post-sprint judge-evidence refinement
 

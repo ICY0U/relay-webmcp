@@ -38,6 +38,6 @@ Each rehearsal used the visible human interface: review plan, start coordination
 
 Runtime result: zero browser warnings and zero browser errors after the ten-run sequence.
 
-## Remaining official-browser check
+## Official-browser check
 
-The connected Chrome profile currently reports **Demo mode**, so `document.modelContext` is not enabled there. Before recording, manually enable Chrome's **WebMCP for testing** flag, relaunch, and confirm RELAY reports **27 tools live**. The app's tool definitions, callbacks, policy enforcement, denials, and visible state synchronization are already covered by the automated suite above.
+The production release reports **27 tools live** in ChatGPT's WebMCP-capable in-app browser. The separate connected Chrome profile still lacks its optional testing flag, but that no longer blocks release because the supported in-app browser registration check passed. The app's tool definitions, callbacks, policy enforcement, denials, and visible state synchronization are also covered by the automated suite above.

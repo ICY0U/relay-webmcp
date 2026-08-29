@@ -1,6 +1,6 @@
 # RELAY — 2:55 competition demo script
 
-Target runtime: 2 minutes 55 seconds. Record at 1440 × 900 or 1600 × 900 with browser zoom at 100%. Use a fresh demo reset and enable Chrome's WebMCP testing flag before recording.
+Final runtime: 2 minutes 46.59 seconds. The finished master was recorded from the production release at 1600 × 900 and exported at 1920 × 1080 with narration and burned-in captions. ChatGPT's in-app browser reported **27 tools live**.
 
 ## 0:00–0:15 — The problem
 

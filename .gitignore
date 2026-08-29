@@ -36,3 +36,9 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# local hackathon workflow and generated demo media
+/.devpost-hackathon-state.json
+/devpost-submission.md
+/artifacts/demo-video/
+/artifacts/demo-video-v2/
