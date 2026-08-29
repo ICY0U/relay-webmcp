@@ -82,7 +82,7 @@ The product build, reliability proof, guided showcase, demo script, architecture
 
 ## Post-sprint judge-evidence refinement
 
-Status: implementation and local verification complete; private deployment pending.
+Status: complete, verified, and privately deployed.
 
 - Replaced generic activity messages with inspectable tool-contract evidence derived from the same domain transitions used by the built-in runner and WebMCP callbacks.
 - Each provider preview shows its exact registered tool name and policy-scoped request fields.
