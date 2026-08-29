@@ -1,12 +1,12 @@
 # Test evidence
 
-Verification date: 28 August 2026
+Verification date: 29 August 2026
 
 Live URL: https://relay-webmcp.creamy-ibex-1200.chatgpt.site
 
 ## Automated
 
-- `npm test`: 27/27 passed.
+- `npm test`: 29/29 passed.
 - `npm run lint`: passed with zero warnings or errors.
 - `npm run build`: production build passed for `/` and `/providers/:provider`.
 - `npm audit --omit=dev`: zero production vulnerabilities.
@@ -16,6 +16,8 @@ Covered rules include the editable draft state, custom move-plan projection into
 The Day 1 trust suite additionally covers exact approval-grant scope, changed terms, wrong-provider use, wrong-action use, ten-minute expiry, atomic consumption, WebMCP replay refusal, and grant-to-receipt linkage.
 
 The Day 2 safety suite covers protected-data refusal without mutation, changed/expired/replayed approval rejection, domain-level out-of-order blocking, the twenty-seven-tool surface, and visible WebMCP safety challenge execution and inspection.
+
+The latest judge-evidence checkpoint verifies that provider transitions record the exact registered tool name, direction, policy-scoped payload, approval grant, and matching receipt result in shared state. The Activity panel renders that evidence without claiming browser registration when the experimental API is unavailable.
 
 ## Browser
 

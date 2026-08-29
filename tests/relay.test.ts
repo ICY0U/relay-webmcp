@@ -74,6 +74,28 @@ describe('RELAY delegation state', () => {
     expect(state.receipts).toHaveLength(5);
   });
 
+  it('records exact tool contracts alongside the visible provider transitions', () => {
+    const running = beginService(startMission(READY_STATE), 'civic', new Date('2026-08-27T14:00:00.000Z'));
+    expect(running.activity[0]).toMatchObject({
+      kind: 'Tool call',
+      tool: {
+        name: 'council_preview_move',
+        direction: 'request',
+        payload: { newAddress: '18 River Lane', moveDate: '2026-09-15' },
+      },
+    });
+
+    const completed = completeService(running, 'civic', new Date('2026-08-27T14:00:01.000Z'));
+    expect(completed.activity[0]).toMatchObject({
+      kind: 'Tool result',
+      tool: {
+        name: 'council_commit_move',
+        direction: 'response',
+        payload: { status: 'completed', receiptId: 'RCT-CIV-0915', address: '18 River Lane' },
+      },
+    });
+  });
+
   it('projects custom mission values into provider accounts and receipts', () => {
     const custom = configureMission(INITIAL_STATE, {
       ...DEFAULT_MISSION,
@@ -106,6 +128,32 @@ describe('RELAY delegation state', () => {
     expect(approved.approvalStatus).toBe('approved');
     expect(approved.services.find((service) => service.id === 'wavelength')?.status).toBe('Complete');
     expect(approved.receipts.at(-1)).toMatchObject({ service: 'Wavelength', policyId: 'POL-MOVE-0915', approvedBy: 'David · explicit approval' });
+  });
+
+  it('shows the scoped internet commit request and its receipt result after approval', () => {
+    const granted = grantInternetApproval(requestInternetApproval(startMission(READY_STATE)), new Date('2026-08-27T14:00:00.000Z'));
+    const approved = approveInternetTransfer(granted, buildInternetCommitRequest(granted), new Date('2026-08-27T14:01:00.000Z'));
+    const commitCall = approved.activity.find((item) => item.id === 'wavelength-commit-call');
+    const result = approved.activity.find((item) => item.id === 'wavelength-result');
+
+    expect(commitCall?.tool).toEqual({
+      name: 'internet_commit_transfer',
+      direction: 'request',
+      payload: {
+        proposalId: 'PROP-WAV-300',
+        plan: 'Fibre 300',
+        monthlyCost: 42,
+        contractMonths: 12,
+        moveDate: '2026-09-15',
+        postcode: 'SE1 2AB',
+        grantId: 'GRT-WAV-300-0915',
+      },
+    });
+    expect(result?.tool).toEqual({
+      name: 'internet_commit_transfer',
+      direction: 'response',
+      payload: { status: 'completed', receiptId: 'RCT-WAV-0915', grantId: 'GRT-WAV-300-0915', monthlyCost: 42 },
+    });
   });
 
   it('creates an exact single-use grant for the reviewed provider action', () => {

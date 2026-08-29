@@ -545,9 +545,9 @@ function ReceiptsPanel({ state }: { state: RelayState }) {
 }
 
 function ActivityPanel({ activity, webmcp }: { activity: RelayState['activity']; webmcp: { supported: boolean | null; registeredCount: number } }) {
-  return <><PanelHeading kicker="Agent trace" title="Structured, not simulated." body="This timeline mirrors the same state used by the visible UI and WebMCP callbacks." />
+  return <><PanelHeading kicker="Inspectable execution" title="Every tool call, in the open." body="The built-in demo and WebMCP callbacks share this domain state. Each transition records the exact tool contract used." />
     <div className={`mcp-status ${webmcp.supported ? 'live' : ''}`}><RadioTower size={18} /><div><strong>{webmcp.supported ? 'WebMCP available' : 'Human demo mode'}</strong><span>{webmcp.supported ? `${webmcp.registeredCount} RELAY tools registered` : 'The full visible flow remains available.'}</span></div></div>
-    {activity.length === 0 ? <div className="empty-panel"><ActivityIcon size={25} /><strong>Waiting to begin</strong><p>The live agent trace will appear here as each structured action runs.</p></div> : <div className="activity-list">{activity.map((item) => <article key={item.id}><time>{new Date(item.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time><div><span>{item.kind}</span><p>{item.label}</p></div></article>)}</div>}
+    {activity.length === 0 ? <div className="empty-panel"><ActivityIcon size={25} /><strong>Waiting to begin</strong><p>Start the move plan to see policy checks, exact tool inputs, approval evidence, and receipt results.</p></div> : <div className="activity-list structured-trace">{activity.map((item) => <article key={item.id}><time>{new Date(item.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time><div className="trace-entry"><span className="trace-kind">{item.kind}</span><p>{item.label}</p>{item.tool && <section className={`tool-contract ${item.tool.direction}`}><header><code>{item.tool.name}</code><b>{item.tool.direction === 'request' ? 'REQUEST' : 'RESULT'}</b></header><dl>{Object.entries(item.tool.payload).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value === null ? 'none' : String(value)}</dd></div>)}</dl></section>}</div></article>)}</div>}
   </>;
 }
 

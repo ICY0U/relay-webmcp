@@ -50,6 +50,11 @@ export type ActivityEntry = {
   timestamp: string;
   label: string;
   kind: 'Policy check' | 'Tool call' | 'Tool result' | 'Human approval' | 'Approval grant' | 'Safety refusal';
+  tool?: {
+    name: string;
+    direction: 'request' | 'response';
+    payload: Record<string, string | number | boolean | null>;
+  };
 };
 
 export type SafetyChallengeId = 'forbidden_employer_change' | 'changed_terms' | 'expired_approval' | 'replayed_approval' | 'out_of_order_action';
@@ -202,8 +207,33 @@ function formatMoveDate(value: string) {
   return new Date(`${value}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
-function activity(id: string, label: string, kind: ActivityEntry['kind'], now: Date): ActivityEntry {
-  return { id, label, kind, timestamp: now.toISOString() };
+function activity(id: string, label: string, kind: ActivityEntry['kind'], now: Date, tool?: ActivityEntry['tool']): ActivityEntry {
+  return { id, label, kind, timestamp: now.toISOString(), ...(tool ? { tool } : {}) };
+}
+
+function previewTrace(state: RelayState, serviceId: string): ActivityEntry['tool'] | undefined {
+  const { mission } = state;
+  const traces: Record<string, NonNullable<ActivityEntry['tool']>> = {
+    civic: { name: 'council_preview_move', direction: 'request', payload: { newAddress: mission.newAddress, moveDate: mission.moveDate } },
+    northstar: { name: 'energy_preview_move', direction: 'request', payload: { moveDate: mission.moveDate } },
+    clearflow: { name: 'water_preview_move', direction: 'request', payload: { moveDate: mission.moveDate, postcode: mission.postcode } },
+    postway: { name: 'postal_preview_forwarding', direction: 'request', payload: { months: mission.forwardingMonths } },
+    haven: { name: 'insurance_preview_address_change', direction: 'request', payload: { newAddress: mission.newAddress, moveDate: mission.moveDate } },
+    wavelength: { name: 'internet_preview_transfer', direction: 'request', payload: { moveDate: mission.moveDate, postcode: mission.postcode } },
+  };
+  return traces[serviceId];
+}
+
+function resultTrace(state: RelayState, serviceId: string, receipt: Receipt): ActivityEntry['tool'] | undefined {
+  const { mission } = state;
+  const traces: Record<string, NonNullable<ActivityEntry['tool']>> = {
+    civic: { name: 'council_commit_move', direction: 'response', payload: { status: 'completed', receiptId: receipt.receiptId, address: mission.newAddress } },
+    northstar: { name: 'energy_schedule_move', direction: 'response', payload: { status: 'completed', receiptId: receipt.receiptId, moveDate: mission.moveDate } },
+    clearflow: { name: 'water_schedule_move', direction: 'response', payload: { status: 'completed', receiptId: receipt.receiptId, address: mission.newAddress } },
+    postway: { name: 'postal_schedule_forwarding', direction: 'response', payload: { status: 'completed', receiptId: receipt.receiptId, months: mission.forwardingMonths } },
+    haven: { name: 'insurance_commit_address_change', direction: 'response', payload: { status: 'completed', receiptId: receipt.receiptId, monthlyPremium: 28 } },
+  };
+  return traces[serviceId];
 }
 
 export function configureMission(state: RelayState, mission: MissionConfig, now = new Date()): RelayState {
@@ -310,7 +340,7 @@ export function beginService(state: RelayState, serviceId: string, now = new Dat
     ...state,
     missionStatus: 'running',
     services: state.services.map((item) => item.id === serviceId ? { ...item, tone: 'running', status: 'Executing' } : item),
-    activity: [activity(`${serviceId}-call`, `${service.name} tools invoked with policy-scoped data`, 'Tool call', now), ...state.activity],
+    activity: [activity(`${serviceId}-call`, `${service.name} received only the fields allowed by ${POLICY.id}`, 'Tool call', now, previewTrace(state, serviceId)), ...state.activity],
   };
 }
 
@@ -361,7 +391,7 @@ export function completeService(state: RelayState, serviceId: string, now = new 
     providers,
     services: state.services.map((item) => item.id === serviceId ? { ...item, tone: 'done', status: 'Complete', summary: summaries[serviceId] } : item),
     receipts: [...state.receipts, receipt],
-    activity: [activity(`${serviceId}-result`, `${service.name} completed and returned ${receipt.receiptId}`, 'Tool result', now), ...state.activity],
+    activity: [activity(`${serviceId}-result`, `${service.name} completed and returned ${receipt.receiptId}`, 'Tool result', now, resultTrace(state, serviceId, receipt)), ...state.activity],
   };
 }
 
@@ -450,6 +480,7 @@ export function approveInternetTransfer(state: RelayState, request = buildIntern
 }
 
 function completeInternetTransfer(state: RelayState, approvedBy: string, now: Date, approvalGrantId?: ApprovalGrant['grantId']): RelayState {
+  const request = buildInternetCommitRequest(state);
   const receipt: Receipt = {
     receiptId: 'RCT-WAV-0915',
     service: 'Wavelength', action: 'Internet transfer approved', status: 'completed',
@@ -472,8 +503,17 @@ function completeInternetTransfer(state: RelayState, approvedBy: string, now: Da
       : service),
     receipts: [...state.receipts, receipt],
     activity: [
+      activity('wavelength-result', approvedBy === 'delegation-policy' ? `Wavelength completed within the £${state.mission.approvalThreshold}/mo threshold and returned ${receipt.receiptId}` : `Wavelength completed after explicit approval and returned ${receipt.receiptId}`, 'Tool result', now, {
+        name: 'internet_commit_transfer',
+        direction: 'response',
+        payload: { status: 'completed', receiptId: receipt.receiptId, grantId: approvalGrantId ?? null, monthlyCost: 42 },
+      }),
       ...(approvalGrantId ? [activity('wavelength-grant-consumed', `${approvalGrantId} consumed once and permanently closed`, 'Approval grant', now)] : []),
-      activity('wavelength-result', approvedBy === 'delegation-policy' ? `Wavelength completed within the £${state.mission.approvalThreshold}/mo threshold and returned ${receipt.receiptId}` : `Wavelength completed after explicit approval and returned ${receipt.receiptId}`, 'Tool result', now),
+      activity('wavelength-commit-call', 'Wavelength received the reviewed terms and scoped authorization', 'Tool call', now, {
+        name: 'internet_commit_transfer',
+        direction: 'request',
+        payload: { proposalId: request.proposalId, plan: request.plan, monthlyCost: request.monthlyCost, contractMonths: request.contractMonths, moveDate: request.moveDate, postcode: request.postcode, grantId: approvalGrantId ?? null },
+      }),
       ...state.activity,
     ],
   };

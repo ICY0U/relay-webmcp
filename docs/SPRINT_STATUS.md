@@ -1,6 +1,6 @@
 # RELAY competition sprint status
 
-Updated: 28 August 2026
+Updated: 29 August 2026
 
 This file is the recovery point for the three-hour heartbeat. Resume the highest incomplete checkpoint and preserve the last deployed version until the next checkpoint passes.
 
@@ -79,6 +79,16 @@ Status: every safe autonomous release check is complete; participant-controlled 
 ## Sprint completion boundary
 
 The product build, reliability proof, guided showcase, demo script, architecture visual, and autonomous release audit are complete. The remaining work requires participant authority or participant-created assets: initialize/acknowledge the Devpost flow, enable the Chrome flag, capture and upload media, choose public access, publish the repository, and explicitly approve final submission.
+
+## Post-sprint judge-evidence refinement
+
+Status: implementation and local verification complete; private deployment pending.
+
+- Replaced generic activity messages with inspectable tool-contract evidence derived from the same domain transitions used by the built-in runner and WebMCP callbacks.
+- Each provider preview shows its exact registered tool name and policy-scoped request fields.
+- Each provider mutation shows its exact commit tool, completion status, and matching receipt identifier.
+- The approval-gated internet commit now records the exact reviewed request, scoped grant identifier, and receipt result as separate evidence.
+- Automated tests: 29 passing; lint and production build passing.
 
 ## Later checkpoints
 

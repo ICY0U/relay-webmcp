@@ -19,7 +19,7 @@ The demo proves seven ideas:
 3. **Human approval gates** — the agent can open and prepare an approval, but cannot grant it.
 4. **Single-use approval grants** — approval is bound to one provider, one action, exact reviewed terms, a ten-minute lifetime, and one use.
 5. **Action receipts** — every mutation returns a compact, inspectable audit record, including the grant consumed for a human-approved action.
-6. **Visible orchestration** — RELAY contains a complete built-in move coordinator, while real provider-level WebMCP tool calls can also drive the same plan state, activity trace, and receipts.
+6. **Visible orchestration** — RELAY contains a complete built-in move coordinator, while real provider-level WebMCP tool calls can also drive the same plan state, activity trace, and receipts. The inspectable trace names the exact tool contract and shows its scoped request or receipt-bearing result.
 7. **Executable safety proof** — judges can run five controlled adversarial requests through the real policy seam and inspect refusal records that prove provider state did not change.
 
 ![RELAY architecture](public/relay-architecture.svg)
@@ -49,7 +49,7 @@ Open **3-minute guide** at any point for a live four-act walkthrough that follow
 2. Press **Review move plan**, explain the generated instruction and approval rules, then press **Start move plan** without leaving RELAY.
 3. Show Civic, Northstar, Clearflow, Postway, and Haven execute in sequence; each action changes the visible plan and creates a receipt.
 4. Show RELAY pause at 83% before the Wavelength price increase while Hearth remains blocked.
-5. Open **Activity** to show the live structured trace, then **Permissions** to show the precise boundary.
+5. Open **Activity** to show the exact WebMCP tool names, scoped inputs, results, and receipt IDs, then **Permissions** to show the precise boundary.
 6. Open **Safety proof** and run a changed-terms challenge to show a refusal record without changing a provider or adding a success receipt.
 7. Open **Review this decision**, acknowledge the exact £6 monthly increase, and press **Approve once & continue** as the human.
 8. Show RELAY commit the narrowly approved transfer, then show completion and all six receipts.
