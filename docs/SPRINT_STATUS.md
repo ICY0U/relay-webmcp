@@ -89,7 +89,7 @@ The product build, reliability proof, guided showcase, screenshot set, demonstra
 - Revised 2:46 narrated demonstration completed and verified.
 - Official field-by-field draft created at `devpost-submission.md`.
 - Fresh release checks passed: 29 tests, lint, production build, zero production vulnerabilities, and no secret-pattern or `.env` files.
-- Public Sites access, licensed GitHub repository, and public YouTube demonstration are complete. The remaining external action is the explicitly authorized final Devpost submission and public-page verification.
+- Public Sites access, licensed GitHub repository, public YouTube demonstration, and the verified Devpost submission are complete.
 
 ## Post-sprint judge-evidence refinement
 

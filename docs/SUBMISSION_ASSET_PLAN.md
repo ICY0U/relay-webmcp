@@ -45,4 +45,4 @@ Capture these from the stable live URL after resetting the demo. Use 1600 × 900
 - Public source and detected MIT license: https://github.com/ICY0U/relay-webmcp
 - Public Sites deployment verified without the owner's session.
 - Personal declarations and public URLs confirmed in `devpost-submission.md`.
-- Final Devpost submission and public project-page verification remain.
+- Devpost submission and public project-page verification completed: https://devpost.com/software/relay-one-intent-many-websites

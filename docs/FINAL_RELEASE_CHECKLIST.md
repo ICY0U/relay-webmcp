@@ -29,7 +29,7 @@ Updated: 29 August 2026
 - [x] Make the stable demo URL public and verify an unauthenticated HTTP 200 response.
 - [x] Generate the official field-by-field draft in `devpost-submission.md`.
 - [x] Confirm the personal form declarations in the draft.
-- [ ] Run the final submit workflow, review every field, give explicit submission confirmation, and verify the public project page.
+- [x] Run the final submit workflow, review every field, give explicit submission confirmation, and verify the public project page.
 
 ## Release commands
 
@@ -53,6 +53,6 @@ Do not submit if any of these are true:
 
 ## Recommended final sequence
 
-1. Review the synchronized Devpost fields, public links, and personal declarations.
-2. Give explicit final submission confirmation.
-3. Submit and verify the public project page.
+1. Keep the live app, public repository, and public video available through judging.
+2. Avoid changes to the tested release unless a stop-ship problem is discovered.
+3. Monitor Devpost announcements and the project page for any required follow-up.

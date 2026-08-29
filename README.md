@@ -108,7 +108,7 @@ docs/TEST_EVIDENCE.md             latest verification record
 
 The production release has been verified in ChatGPT's WebMCP-capable in-app browser with **27 tools live**. The final evidence package includes five 1600 × 900 screenshots, a 2:46 narrated product demonstration, the field-by-field Devpost draft, 29 automated tests, and ten tool-driven plus ten visible-interface rehearsals.
 
-The [live demo](https://relay-webmcp.creamy-ibex-1200.chatgpt.site/), [licensed source repository](https://github.com/ICY0U/relay-webmcp), and [2:47 public demonstration video](https://youtu.be/A_jYs6DvWWw) are published. The only remaining release step is the explicit final Devpost submission and public-page verification. See the [submission asset plan](docs/SUBMISSION_ASSET_PLAN.md) and [release checklist](docs/FINAL_RELEASE_CHECKLIST.md).
+The [live demo](https://relay-webmcp.creamy-ibex-1200.chatgpt.site/), [licensed source repository](https://github.com/ICY0U/relay-webmcp), and [2:47 public demonstration video](https://youtu.be/A_jYs6DvWWw) are published. RELAY was submitted to [The WebMCP Challenge on Devpost](https://devpost.com/software/relay-one-intent-many-websites) on 29 August 2026. See the [submission asset plan](docs/SUBMISSION_ASSET_PLAN.md) and [release checklist](docs/FINAL_RELEASE_CHECKLIST.md).
 
 ## License
 
