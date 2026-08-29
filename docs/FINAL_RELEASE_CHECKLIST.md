@@ -1,6 +1,6 @@
 # RELAY final release checklist
 
-Updated: 28 August 2026
+Updated: 29 August 2026
 
 ## Autonomous verification — passed
 
@@ -16,7 +16,7 @@ Updated: 28 August 2026
 - [x] MIT license present.
 - [x] Timed demo script, screenshot plan, architecture visual, test evidence, and reliability matrix present.
 - [x] Latest committed source pushed to the Sites source repository and deployed to the stable live URL.
-- [x] Production Sites access remains owner-only while release assets are unfinished.
+- [x] Production Sites access is public and an unauthenticated HTTP 200 response was verified.
 
 ## Participant actions — required before final submission
 
@@ -24,7 +24,7 @@ Updated: 28 August 2026
 - [x] Confirm RELAY says **27 tools live** in ChatGPT's WebMCP-capable in-app browser.
 - [x] Capture and organize the five screenshots in `artifacts/submission-screenshots/`.
 - [x] Record, caption, and review the 2:46 demonstration video.
-- [ ] Upload the final video to YouTube and add its publicly viewable URL.
+- [x] Upload the final video to YouTube and add its publicly viewable URL: https://youtu.be/A_jYs6DvWWw
 - [x] Publish the verified source at https://github.com/ICY0U/relay-webmcp and confirm GitHub detects the MIT license.
 - [x] Make the stable demo URL public and verify an unauthenticated HTTP 200 response.
 - [x] Generate the official field-by-field draft in `devpost-submission.md`.
@@ -53,6 +53,6 @@ Do not submit if any of these are true:
 
 ## Recommended final sequence
 
-1. Upload the verified demonstration master to YouTube.
-2. Confirm the personal form declarations and insert the video URL.
-3. Run the final submit workflow, rehearse once, submit early, and verify the public page.
+1. Review the synchronized Devpost fields, public links, and personal declarations.
+2. Give explicit final submission confirmation.
+3. Submit and verify the public project page.

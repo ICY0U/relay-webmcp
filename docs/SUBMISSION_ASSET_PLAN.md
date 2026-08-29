@@ -41,7 +41,8 @@ Capture these from the stable live URL after resetting the demo. Use 1600 × 900
 - The five named screenshots are complete in `artifacts/submission-screenshots/`.
 - The 2:46 narrated video master is complete in `artifacts/demo-video-v2/`.
 - ChatGPT's in-app browser confirmed **27 tools live** on the production release.
-- Upload the finished video to YouTube and add its publicly viewable URL.
+- Public video: https://youtu.be/A_jYs6DvWWw
 - Public source and detected MIT license: https://github.com/ICY0U/relay-webmcp
-- Make the Sites deployment public and confirm it works without the owner's session.
-- Confirm the personal declarations and public URLs in `devpost-submission.md`.
+- Public Sites deployment verified without the owner's session.
+- Personal declarations and public URLs confirmed in `devpost-submission.md`.
+- Final Devpost submission and public project-page verification remain.
