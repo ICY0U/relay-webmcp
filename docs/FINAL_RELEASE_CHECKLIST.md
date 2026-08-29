@@ -25,10 +25,10 @@ Updated: 28 August 2026
 - [x] Capture and organize the five screenshots in `artifacts/submission-screenshots/`.
 - [x] Record, caption, and review the 2:46 demonstration video.
 - [ ] Upload the final video to YouTube and add its publicly viewable URL.
-- [ ] Create a public source repository and push the verified commit; the current `sites` remote is a private deployment source, not a public competition repository.
+- [x] Publish the verified source at https://github.com/ICY0U/relay-webmcp and confirm GitHub detects the MIT license.
 - [x] Make the stable demo URL public and verify an unauthenticated HTTP 200 response.
 - [x] Generate the official field-by-field draft in `devpost-submission.md`.
-- [ ] Confirm the personal form declarations in the draft.
+- [x] Confirm the personal form declarations in the draft.
 - [ ] Run the final submit workflow, review every field, give explicit submission confirmation, and verify the public project page.
 
 ## Release commands
@@ -46,14 +46,13 @@ Do not submit if any of these are true:
 
 - RELAY does not show **27 tools live** in the final WebMCP evidence.
 - The public demo no longer returns an unauthenticated HTTP 200 response.
-- The repository link points only to the private Sites source remote.
+- The public repository is unavailable or no longer shows the MIT license.
 - The video exceeds the event limit or hides the human approval and refusal proof.
 - The recorded source revision differs from the tested and deployed revision.
 - Any screenshot contains personal browser data, unrelated tabs, notifications, tokens, or credentials.
 
 ## Recommended final sequence
 
-1. Publish the exact verified source revision to a public licensed repository.
-2. Upload the verified demonstration master to YouTube.
-3. Confirm the personal form declarations and insert the two public URLs.
-4. Run the final submit workflow, rehearse once, submit early, and verify the public page.
+1. Upload the verified demonstration master to YouTube.
+2. Confirm the personal form declarations and insert the video URL.
+3. Run the final submit workflow, rehearse once, submit early, and verify the public page.

@@ -108,7 +108,7 @@ docs/TEST_EVIDENCE.md             latest verification record
 
 The production release has been verified in ChatGPT's WebMCP-capable in-app browser with **27 tools live**. The final evidence package includes five 1600 × 900 screenshots, a 2:46 narrated product demonstration, the field-by-field Devpost draft, 29 automated tests, and ten tool-driven plus ten visible-interface rehearsals.
 
-The remaining publication steps are to make the Sites deployment public, publish this licensed source revision to a public repository, upload the finished video to YouTube, confirm the personal form declarations, and run the final explicit submission workflow. See [the submission draft](devpost-submission.md), [submission asset plan](docs/SUBMISSION_ASSET_PLAN.md), and [release checklist](docs/FINAL_RELEASE_CHECKLIST.md).
+The live demo and licensed source repository are public. The remaining steps are to upload the finished video to YouTube, add its URL to Devpost, and run the final explicit submission workflow. See the [submission asset plan](docs/SUBMISSION_ASSET_PLAN.md) and [release checklist](docs/FINAL_RELEASE_CHECKLIST.md).
 
 ## License
 

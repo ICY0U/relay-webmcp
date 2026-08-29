@@ -42,6 +42,6 @@ Capture these from the stable live URL after resetting the demo. Use 1600 × 900
 - The 2:46 narrated video master is complete in `artifacts/demo-video-v2/`.
 - ChatGPT's in-app browser confirmed **27 tools live** on the production release.
 - Upload the finished video to YouTube and add its publicly viewable URL.
-- Choose and publish a public source repository after the completed secret scan.
+- Public source and detected MIT license: https://github.com/ICY0U/relay-webmcp
 - Make the Sites deployment public and confirm it works without the owner's session.
 - Confirm the personal declarations and public URLs in `devpost-submission.md`.
